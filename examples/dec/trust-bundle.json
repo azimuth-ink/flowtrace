@@ -1,0 +1,21 @@
+{
+  "format": "dec-trust/0.2",
+  "issuer": {
+    "id": "operator.example"
+  },
+  "keys": [
+    {
+      "key_id": "k-2026-10",
+      "alg": "Ed25519",
+      "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAVR3VYXHxm1GZDu31lHCStPACxkBWW/sCejyYxMykmv4=\n-----END PUBLIC KEY-----\n",
+      "not_before": "2026-10-01T00:00:00Z",
+      "status": "active"
+    }
+  ],
+  "flow_registries": [
+    {
+      "id": "flows.flowtrace.example",
+      "ref": "../flows/"
+    }
+  ]
+}

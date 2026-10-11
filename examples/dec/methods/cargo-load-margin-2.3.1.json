@@ -1,0 +1,1 @@
+{"method_kind":"calc.v0","output":"margin","params":["payload_limit","current_load"],"procedure":"margin = payload_limit - current_load"}

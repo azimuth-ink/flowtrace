@@ -1,0 +1,51 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below, and cite the method it implements (Gray 2026, Flow-Based Telemetry Coverage, concept DOI 10.5281/zenodo.21415947)."
+title: "flowtrace: Reference Implementation of Flow-Based Telemetry Coverage"
+type: software
+authors:
+  - family-names: Gray
+    given-names: Jeff
+    orcid: "https://orcid.org/0009-0005-6796-6576"
+    affiliation: Independent
+version: 0.1.0
+date-released: 2026-10-10
+license: Apache-2.0
+# doi: assigned by Zenodo on the first tagged release; the author mints it.
+repository-code: "https://github.com/azimuth-ink/flowtrace"
+url: "https://azimuth.ink"
+keywords:
+  - observability
+  - distributed tracing
+  - OpenTelemetry
+  - SLO
+  - SRE
+  - coverage
+  - conformance checking
+  - execution evidence
+references:
+  - type: generic
+    title: "Flow-Based Telemetry Coverage: A Method for Measuring and Governing Observability by Business-Flow Consequence"
+    authors:
+      - family-names: Gray
+        given-names: Jeff
+    year: 2026
+    doi: 10.5281/zenodo.21415947
+    notes: "Defensive publication, v1.1 (CC0 1.0); the method this software implements. Included under paper/."
+  - type: software
+    title: "Polydiagram: Business Flows as Governed Architecture Artifacts with Telemetry Binding"
+    authors:
+      - family-names: Gray
+        given-names: Jeff
+    year: 2026
+    doi: 10.5281/zenodo.21524083
+    version: 0.3.0
+    notes: "Owner of flow.spec/v0.2; pinned at azimuth-ink/polydiagram@9345577."
+  - type: software
+    title: "Deterministic Execution Certificates (agent-dec)"
+    authors:
+      - family-names: Gray
+        given-names: Jeff
+    year: 2026
+    doi: 10.5281/zenodo.21524087
+    version: 0.2.0
+    notes: "Verifier called as a library for execution-evidence coverage; pinned at azimuth-ink/agent-dec@e8075f9."

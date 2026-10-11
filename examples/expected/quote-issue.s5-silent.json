@@ -1,0 +1,1214 @@
+{
+  "exit_code": 1,
+  "flows": [
+    {
+      "components": {
+        "answerability": {
+          "answerable": 1,
+          "applicable": true,
+          "declared": 1,
+          "not_evaluated": 0,
+          "reason": null,
+          "scenarios": [
+            {
+              "columns": [
+                "reference_data_version",
+                "decision",
+                "n"
+              ],
+              "dialect": "otel-sql",
+              "index": 0,
+              "reason": null,
+              "rows": 4,
+              "scenario": "Limit evaluated against stale reference data",
+              "source": "binding:quote-issue.queries.yaml",
+              "status": "answerable",
+              "step": "s4"
+            }
+          ],
+          "score": 1.0
+        },
+        "completeness": {
+          "applicable": true,
+          "blind_spots": [
+            "s5"
+          ],
+          "by_step": {
+            "s1": {
+              "complete_runs": 32,
+              "fraction": 1.0,
+              "missing": {},
+              "present_runs": 32
+            },
+            "s2": {
+              "complete_runs": 32,
+              "fraction": 1.0,
+              "missing": {},
+              "present_runs": 32
+            },
+            "s3": {
+              "complete_runs": 32,
+              "fraction": 1.0,
+              "missing": {},
+              "present_runs": 32
+            },
+            "s4": {
+              "complete_runs": 32,
+              "fraction": 1.0,
+              "missing": {},
+              "present_runs": 32
+            },
+            "s5": {
+              "complete_runs": 0,
+              "fraction": 0.0,
+              "missing": {
+                "no span carries flow.step=s5": 32
+              },
+              "present_runs": 0
+            },
+            "s6": {
+              "complete_runs": 32,
+              "fraction": 1.0,
+              "missing": {},
+              "present_runs": 32
+            }
+          },
+          "reason": null,
+          "runs_complete": 0,
+          "runs_sampled": 32,
+          "score": 0.0
+        },
+        "cost_attribution": {
+          "applicable": true,
+          "by_step": {
+            "s1": {
+              "attributable": true,
+              "attributes_seen": [
+                "cost.usd"
+              ],
+              "cost_usd_total": 0.000931,
+              "spans": 32
+            },
+            "s2": {
+              "attributable": true,
+              "attributes_seen": [
+                "cost.usd"
+              ],
+              "cost_usd_total": 0.000705,
+              "spans": 32
+            },
+            "s3": {
+              "attributable": true,
+              "attributes_seen": [
+                "cost.usd"
+              ],
+              "cost_usd_total": 0.020942,
+              "spans": 32
+            },
+            "s4": {
+              "attributable": true,
+              "attributes_seen": [
+                "cost.usd"
+              ],
+              "cost_usd_total": 0.005958,
+              "spans": 32
+            },
+            "s5": {
+              "attributable": false,
+              "attributes_seen": [],
+              "cost_usd_total": null,
+              "spans": 0
+            },
+            "s6": {
+              "attributable": true,
+              "attributes_seen": [
+                "cost.usd"
+              ],
+              "cost_usd_total": 0.028597,
+              "spans": 32
+            }
+          },
+          "cost_attributes": [
+            "cost.usd",
+            "cost.tokens",
+            "llm.usage.total_tokens",
+            "gen_ai.usage.total_tokens"
+          ],
+          "flow_attributable": false,
+          "score": 0.8333333333333334
+        },
+        "detectability": {
+          "alert_latency_bound_s": 60.0,
+          "applicable": true,
+          "reason": null,
+          "score": 1.0,
+          "targets": [
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-sync-latency-p95",
+                "threshold": 1800.0
+              },
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 962.375321,
+              "reason": null,
+              "scope": "flow",
+              "slo": "latency_p95_ms",
+              "target": 1800.0
+            },
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-async-completion-p99",
+                "threshold": 120.0
+              },
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 4.910568,
+              "reason": null,
+              "scope": "flow",
+              "slo": "async_completion_p99_s",
+              "target": 120.0
+            },
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-availability",
+                "threshold": 99.9
+              },
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 100.0,
+              "reason": null,
+              "scope": "flow",
+              "slo": "availability",
+              "target": 99.9
+            },
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-s4-latency-p99",
+                "threshold": 120.0
+              },
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 93.819212,
+              "reason": null,
+              "scope": "s4",
+              "slo": "latency_p99_ms",
+              "target": 120.0
+            },
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-s4-error-rate",
+                "threshold": 0.01
+              },
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 0.0,
+              "reason": null,
+              "scope": "s4",
+              "slo": "error_rate_percent",
+              "target": 0.01
+            }
+          ]
+        },
+        "execution_evidence": {
+          "applicable": true,
+          "reason": null,
+          "run_binding": "warn",
+          "score": 1.0,
+          "steps": {
+            "s4": {
+              "examples": [],
+              "fraction": 1.0,
+              "run_binding_mismatches": 31,
+              "runs": 32,
+              "statuses": {
+                "verified": 32
+              },
+              "verified": 32
+            }
+          },
+          "warnings": [
+            "step s4: 31 verified certificate(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4"
+          ]
+        }
+      },
+      "conformance": {
+        "runs": [
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "0ec48f04368aefcd285ac089ef19e701"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "0f02a90b27e410dd610a05f93da890c9"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "119474d6edb83661791dc98b56d700c5"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "14f6dba0c8416bdf312560ab918f372d"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "14f8201319e677b492d1fdf8a9942b70"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "187eb87c75ca7e601914e702ae17e083"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "1c6b08a8e14e397863346373be859032"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "3ddd954ac1f85ebaa61da6b6dc0835ab"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "3e02148463da3193d043c775817cb686"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "3e4b663adfdb2cc56e01123e7f0c50fd"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "4585a544dd940f7318cdf6b90817e0f4"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "49db7184b2dd6a4dcfe2612f14f83d5f"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "4a5e8b3b8875b55e00a6aeb692060f5f"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "6be17936f3117af3250cbb4fd9b74d40"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "6d8e311c5d92de0816bcd0b9c6905ce8"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "6ea2395d34d286ab2f2c824dfc6bee31"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "97aea3b601ee8a086923a4a14fc5977c"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "a68f5b1ed25d50262e9b0fff4bd9825a"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "af6ea6abd1a78b15556686d1f3822aea"
+          },
+          {
+            "absent": [],
+            "divergent": [],
+            "failed": [],
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "manifest:run.dec.json",
+            "trace_id": "b8e06f909fc7110707032a18b942e128"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "b9facf1c939183a57b533be22ec19000"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "bb9719baf2000da396fd80b912ddc89b"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "c67e47528ab9ad86064b6454048d3803"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "cf726cc59f56516b0cbb65d3e3f4a8c9"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "d0e4edae38a7dbd9c23a6fcfc3883874"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "d3b54788f0c3a19a1cbe77e104e7432e"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "d90fede37313366df353d5e8dc4f9bc6"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "e4e08644e7a046e61fe55367809334ae"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "e92542dd284fefb182d7007d1cab4ce2"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "f442073c23ccc5373241782707efbe25"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "fabbd07ab52c0df9bc52cbf4037f7fe3"
+          },
+          {
+            "absent": [
+              "s5"
+            ],
+            "divergent": [],
+            "failed": [],
+            "reading": "absent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "source": "spans",
+            "trace_id": "feac7237945d8dd5c5c9555b08fe7e76"
+          }
+        ],
+        "summary": {
+          "by_reading": {
+            "absent": 31,
+            "convergent": 1,
+            "divergent": 0,
+            "failed-run": 0
+          },
+          "non_convergent_runs": 0,
+          "notes": [],
+          "off_plan_steps": {},
+          "runs": 32
+        },
+        "window": {
+          "absent": [
+            "s5"
+          ],
+          "declared": [
+            "s1",
+            "s2",
+            "s3",
+            "s4",
+            "s5",
+            "s6"
+          ],
+          "divergent": [],
+          "observed": [
+            "s1",
+            "s2",
+            "s3",
+            "s4",
+            "s6"
+          ],
+          "reading": "absent"
+        }
+      },
+      "criticality": "P0",
+      "decomposition": {
+        "async_tail": [
+          "s5",
+          "s6"
+        ],
+        "availability": {
+          "base_per_step_percent": 99.974991,
+          "error_budget_percent": 0.1,
+          "target_percent": 99.9
+        },
+        "latency": {
+          "async_tail_p99": {
+            "available_ms": 118990.386,
+            "flow_target_ms": 120000.0,
+            "headroom_ms": 29033.654,
+            "min_sample_runs": 30,
+            "mode": "cold-start:equal_split",
+            "parallel_max_ms": 0.0,
+            "parallel_reserved_ms": 0.0,
+            "percentile": "p99",
+            "sample_runs": 32,
+            "scale": 1.0,
+            "serial_sum_ms": 89956.732,
+            "sync_frontier_reserved_ms": 1009.614,
+            "target_ms": 118990.386
+          },
+          "sync_frontier_p95": {
+            "available_ms": 1800.0,
+            "headroom_ms": 515.913,
+            "min_sample_runs": 30,
+            "mode": "history",
+            "parallel_max_ms": 0.0,
+            "parallel_reserved_ms": 0.0,
+            "percentile": "p95",
+            "sample_runs": 32,
+            "scale": 1.0,
+            "serial_sum_ms": 1284.087,
+            "target_ms": 1800.0
+          }
+        },
+        "steps": {
+          "s1": {
+            "availability": {
+              "asserted": null,
+              "derived": 99.979992,
+              "effective": 99.979992
+            },
+            "criticality": "P0",
+            "error_rate_percent": {
+              "asserted": null,
+              "derived": 0.0125,
+              "effective": 0.0125
+            },
+            "group": "serial",
+            "latency_p95_ms": {
+              "asserted_ms": null,
+              "base_ms": 20.937,
+              "criticality_factor": 0.8,
+              "derived_ms": 15.075,
+              "effective_ms": 15.075,
+              "group": "serial",
+              "hist_ms": 11.639,
+              "nd_factor": 1.0,
+              "safety_margin": 0.9,
+              "share": 0.011632
+            },
+            "latency_p99_ms": {
+              "approximated_from": "latency_p95_ms",
+              "asserted_ms": null,
+              "derived_ms": 21.535,
+              "effective_ms": 21.535
+            },
+            "nd_class": null
+          },
+          "s2": {
+            "availability": {
+              "asserted": null,
+              "derived": 99.979992,
+              "effective": 99.979992
+            },
+            "criticality": "P0",
+            "error_rate_percent": {
+              "asserted": null,
+              "derived": 0.0125,
+              "effective": 0.0125
+            },
+            "group": "serial",
+            "latency_p95_ms": {
+              "asserted_ms": null,
+              "base_ms": 60.844,
+              "criticality_factor": 0.8,
+              "derived_ms": 43.808,
+              "effective_ms": 43.808,
+              "group": "serial",
+              "hist_ms": 33.824,
+              "nd_factor": 1.0,
+              "safety_margin": 0.9,
+              "share": 0.033802
+            },
+            "latency_p99_ms": {
+              "approximated_from": "latency_p95_ms",
+              "asserted_ms": null,
+              "derived_ms": 62.582,
+              "effective_ms": 62.582
+            },
+            "nd_class": null
+          },
+          "s3": {
+            "availability": {
+              "asserted": null,
+              "derived": 99.979992,
+              "effective": 99.979992
+            },
+            "criticality": "P0",
+            "error_rate_percent": {
+              "asserted": null,
+              "derived": 0.0125,
+              "effective": 0.0125
+            },
+            "group": "serial",
+            "latency_p95_ms": {
+              "asserted_ms": null,
+              "base_ms": 1552.76,
+              "criticality_factor": 0.8,
+              "derived_ms": 1117.987,
+              "effective_ms": 1117.987,
+              "group": "serial",
+              "hist_ms": 863.198,
+              "nd_factor": 1.0,
+              "safety_margin": 0.9,
+              "share": 0.862644
+            },
+            "latency_p99_ms": {
+              "approximated_from": "latency_p95_ms",
+              "asserted_ms": null,
+              "derived_ms": 1597.125,
+              "effective_ms": 1597.125
+            },
+            "nd_class": null
+          },
+          "s4": {
+            "availability": {
+              "asserted": null,
+              "derived": 99.979992,
+              "effective": 99.979992
+            },
+            "criticality": "P0",
+            "error_rate_percent": {
+              "asserted": 0.01,
+              "derived": 0.0125,
+              "effective": 0.01
+            },
+            "group": "serial",
+            "latency_p95_ms": {
+              "asserted_ms": null,
+              "base_ms": 165.459,
+              "criticality_factor": 0.8,
+              "derived_ms": 107.217,
+              "effective_ms": 107.217,
+              "group": "serial",
+              "hist_ms": 91.981,
+              "nd_factor": 0.9,
+              "safety_margin": 0.9,
+              "share": 0.091922
+            },
+            "latency_p99_ms": {
+              "approximated_from": "latency_p95_ms",
+              "asserted_ms": 120,
+              "derived_ms": 153.168,
+              "effective_ms": 120.0
+            },
+            "nd_class": "ND0"
+          },
+          "s5": {
+            "criticality": "P0",
+            "group": "serial",
+            "latency_p95_ms": {
+              "approximated_from": "latency_p99_ms",
+              "asserted_ms": null,
+              "derived_ms": 32984.135,
+              "effective_ms": 32984.135
+            },
+            "latency_p99_ms": {
+              "asserted_ms": null,
+              "base_ms": 59495.193,
+              "criticality_factor": 0.8,
+              "derived_ms": 47120.193,
+              "effective_ms": 47120.193,
+              "group": "serial",
+              "hist_ms": null,
+              "nd_factor": 1.1,
+              "safety_margin": 0.9,
+              "share": 0.5
+            },
+            "nd_class": "ND2"
+          },
+          "s6": {
+            "criticality": "P0",
+            "group": "serial",
+            "latency_p95_ms": {
+              "approximated_from": "latency_p99_ms",
+              "asserted_ms": null,
+              "derived_ms": 29985.577,
+              "effective_ms": 29985.577
+            },
+            "latency_p99_ms": {
+              "asserted_ms": null,
+              "base_ms": 59495.193,
+              "criticality_factor": 0.8,
+              "derived_ms": 42836.539,
+              "effective_ms": 42836.539,
+              "group": "serial",
+              "hist_ms": 3911.414,
+              "nd_factor": 1.0,
+              "safety_margin": 0.9,
+              "share": 0.5
+            },
+            "nd_class": null
+          }
+        },
+        "sync_frontier": [
+          "s1",
+          "s2",
+          "s3",
+          "s4"
+        ]
+      },
+      "delta": {
+        "baseline_score": 1.0,
+        "components": {
+          "answerability": {
+            "baseline": 1.0,
+            "delta": 0.0,
+            "score": 1.0
+          },
+          "completeness": {
+            "baseline": 1.0,
+            "delta": -1.0,
+            "score": 0.0
+          },
+          "cost_attribution": {
+            "baseline": 1.0,
+            "delta": -0.166667,
+            "score": 0.8333333333333334
+          },
+          "detectability": {
+            "baseline": 1.0,
+            "delta": 0.0,
+            "score": 1.0
+          },
+          "execution_evidence": {
+            "baseline": 1.0,
+            "delta": 0.0,
+            "score": 1.0
+          }
+        },
+        "delta": -0.366667,
+        "score": 0.633333
+      },
+      "descriptor": "quote-issue.flow.yaml",
+      "descriptor_sha256": "adff7b89ab89311ef0e6f110a7125ec4d9317cdd296a928fea04aaef7d71fe91",
+      "effective_sampling": 1.0,
+      "execution_evidence_enabled": true,
+      "findings": [
+        {
+          "code": "blind-spot",
+          "message": "step s5 has no attributable telemetry in the window",
+          "severity": "fail",
+          "step": "s5"
+        },
+        {
+          "code": "evidence-run-binding",
+          "message": "step s4: 31 verified certificate(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4",
+          "severity": "warn"
+        },
+        {
+          "code": "tier-threshold-regression",
+          "message": "score regressed below the tier threshold: 1.0000 -> 0.6333 (< 1.00)",
+          "severity": "fail"
+        }
+      ],
+      "id": "quote-issue",
+      "observed_slos": {
+        "flow": {
+          "async_completion_p99_s": 4.910568,
+          "availability": 100.0,
+          "latency_p95_ms": 962.375321
+        },
+        "s1": {
+          "availability": 100.0,
+          "error_rate_percent": 0.0,
+          "latency_p95_ms": 11.639036,
+          "latency_p99_ms": 11.89868
+        },
+        "s2": {
+          "availability": 100.0,
+          "error_rate_percent": 0.0,
+          "latency_p95_ms": 33.823916,
+          "latency_p99_ms": 34.59877
+        },
+        "s3": {
+          "availability": 100.0,
+          "error_rate_percent": 0.0,
+          "latency_p95_ms": 863.197626,
+          "latency_p99_ms": 869.297353
+        },
+        "s4": {
+          "availability": 100.0,
+          "error_rate_percent": 0.0,
+          "latency_p95_ms": 91.980664,
+          "latency_p99_ms": 93.819212
+        },
+        "s5": {
+          "availability": null,
+          "error_rate_percent": null,
+          "latency_p95_ms": null,
+          "latency_p99_ms": null
+        },
+        "s6": {
+          "availability": 100.0,
+          "error_rate_percent": 0.0,
+          "latency_p95_ms": 3739.005325,
+          "latency_p99_ms": 3911.414126
+        }
+      },
+      "runs_sampled": 32,
+      "score": 0.633333,
+      "spans": 192,
+      "threshold": 1.0,
+      "tier_policy": {
+        "alert_latency_s": 60.0,
+        "answerability_required": true,
+        "coverage_threshold": 1.0,
+        "ir_sla_s": 900.0,
+        "require_convergent": true,
+        "sampling_floor": 1.0,
+        "tier": "P0"
+      },
+      "verdict": "fail",
+      "verdict_reasons": [
+        "score 0.6333 < tier P0 threshold 1.00",
+        "blind-spot"
+      ],
+      "version": "2.0.0",
+      "weights": {
+        "answerability": 0.25,
+        "completeness": 0.35,
+        "cost_attribution": 0.1,
+        "detectability": 0.2,
+        "execution_evidence": 0.1
+      }
+    }
+  ],
+  "flowtrace": {
+    "report_schema": "flowtrace.report/v0.1",
+    "version": "0.1.0"
+  },
+  "generated_at": null,
+  "ingest_warnings": [],
+  "inputs": {
+    "adapter": "otlp_duckdb",
+    "alerts": "alerts.yaml",
+    "baseline": "quote-issue.full.json",
+    "config": "flowtrace.yaml",
+    "dec_dirs": [
+      "flow-bound"
+    ],
+    "dialects": [
+      "otel-sql"
+    ],
+    "flows_commit": null,
+    "flows_dir": "flows",
+    "queries": [
+      "quote-issue.queries.yaml"
+    ],
+    "telemetry": [
+      "quote-issue.s5-silent.otlp.jsonl"
+    ],
+    "telemetry_sha256": [
+      "64c59a65f98edbd5c7366d2fd9b6389409f87f5641ca2c1d57dd07af0cba5fbe"
+    ],
+    "trust_bundle": "trust-bundle.json"
+  },
+  "verdict": "fail",
+  "window": {
+    "end_ns": 1791684281370465486,
+    "logs": 0,
+    "metrics": 160,
+    "spans": 192,
+    "start_ns": 1791684000000000000,
+    "traces": 32
+  }
+}

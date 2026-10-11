@@ -1,0 +1,310 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azimuth.ink/schemas/flowtrace.report/v0.1/coverage-report.schema.json",
+  "title": "flowtrace coverage report v0.1",
+  "description": "Output of `flowtrace gate` (FTC §4.5 score, §4.3 decomposition, §4.8 conformance, §4.6 gate verdict) for one telemetry window over a set of declared flows. Per flow: the tier policy applied, the component scores with their per-step detail, named blind spots, failing scenarios, conformance findings, the declared flow version and descriptor digest and — unless --reproducible — the commit of the flow set (PD §5: what did we know and when). See spec/coverage-engine.md §6.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["flowtrace", "generated_at", "inputs", "window", "ingest_warnings", "flows", "verdict", "exit_code"],
+  "properties": {
+    "flowtrace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "report_schema"],
+      "properties": {
+        "version": { "type": "string" },
+        "report_schema": { "const": "flowtrace.report/v0.1" }
+      }
+    },
+    "generated_at": { "type": ["string", "null"], "description": "RFC 3339 UTC; null under --reproducible." },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["flows_dir", "flows_commit", "telemetry", "telemetry_sha256", "config", "alerts", "queries", "trust_bundle", "dec_dirs", "baseline", "adapter", "dialects"],
+      "properties": {
+        "flows_dir": { "type": "string" },
+        "flows_commit": { "type": ["string", "null"], "description": "git HEAD of the flow set, when it lives in a repository; null under --reproducible." },
+        "telemetry": { "type": "array", "items": { "type": "string" } },
+        "telemetry_sha256": { "type": "array", "items": { "type": "string", "pattern": "^[0-9a-f]{64}$" } },
+        "config": { "type": "string" },
+        "alerts": { "type": ["string", "null"] },
+        "queries": { "type": "array", "items": { "type": "string" } },
+        "trust_bundle": { "type": ["string", "null"] },
+        "dec_dirs": { "type": "array", "items": { "type": "string" } },
+        "baseline": { "type": ["string", "null"] },
+        "adapter": { "type": "string" },
+        "dialects": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "window": {
+      "type": "object",
+      "required": ["start_ns", "end_ns"],
+      "properties": {
+        "start_ns": { "type": ["integer", "null"] },
+        "end_ns": { "type": ["integer", "null"] },
+        "spans": { "type": "integer" },
+        "metrics": { "type": "integer" },
+        "logs": { "type": "integer" },
+        "traces": { "type": "integer" }
+      }
+    },
+    "ingest_warnings": { "type": "array", "items": { "type": "string" } },
+    "flows": { "type": "array", "items": { "$ref": "#/$defs/flowResult" } },
+    "verdict": { "enum": ["pass", "fail"] },
+    "exit_code": { "enum": [0, 1] }
+  },
+  "$defs": {
+    "score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "tier": { "enum": ["P0", "P1", "P2", "P3"] },
+    "component": {
+      "type": "object",
+      "required": ["score", "applicable"],
+      "properties": {
+        "score": { "$ref": "#/$defs/score" },
+        "applicable": { "type": "boolean", "description": "false = dropped from the weighted sum and the remaining weights renormalized." },
+        "reason": { "type": ["string", "null"] }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "message"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "severity": { "enum": ["fail", "warn"] },
+        "message": { "type": "string" },
+        "step": { "type": "string" }
+      }
+    },
+    "runReading": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trace_id", "source", "realized", "reading", "divergent", "absent", "failed"],
+      "properties": {
+        "trace_id": { "type": "string" },
+        "source": { "type": "string", "description": "spans, or manifest:<run certificate file> (binding B6)." },
+        "realized": { "type": "array", "items": { "type": "string" } },
+        "reading": { "enum": ["convergent", "absent", "divergent", "failed-run"] },
+        "divergent": { "type": "array", "items": { "type": "string" } },
+        "absent": { "type": "array", "items": { "type": "string" } },
+        "failed": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "flowResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "criticality", "descriptor", "descriptor_sha256", "tier_policy", "runs_sampled", "spans", "effective_sampling", "score", "threshold", "verdict", "verdict_reasons", "weights", "execution_evidence_enabled", "components", "decomposition", "conformance", "observed_slos", "findings", "delta"],
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "string" },
+        "criticality": { "$ref": "#/$defs/tier" },
+        "descriptor": { "type": "string" },
+        "descriptor_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "tier_policy": {
+          "type": "object",
+          "required": ["tier", "coverage_threshold", "sampling_floor", "alert_latency_s", "ir_sla_s", "require_convergent", "answerability_required"],
+          "properties": {
+            "tier": { "$ref": "#/$defs/tier" },
+            "coverage_threshold": { "$ref": "#/$defs/score" },
+            "sampling_floor": { "$ref": "#/$defs/score" },
+            "alert_latency_s": { "type": "number" },
+            "ir_sla_s": { "type": ["number", "null"] },
+            "require_convergent": { "type": "boolean" },
+            "answerability_required": { "type": "boolean" }
+          }
+        },
+        "runs_sampled": { "type": "integer", "minimum": 0 },
+        "spans": { "type": "integer", "minimum": 0 },
+        "effective_sampling": { "type": "number", "minimum": 0, "maximum": 1 },
+        "score": { "$ref": "#/$defs/score" },
+        "threshold": { "$ref": "#/$defs/score" },
+        "verdict": { "enum": ["pass", "fail"] },
+        "verdict_reasons": { "type": "array", "items": { "type": "string" } },
+        "weights": {
+          "type": "object",
+          "description": "Effective (renormalized) weights of the applicable components.",
+          "additionalProperties": { "$ref": "#/$defs/score" }
+        },
+        "execution_evidence_enabled": { "type": "boolean" },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["completeness", "answerability", "detectability", "cost_attribution"],
+          "properties": {
+            "completeness": {
+              "allOf": [{ "$ref": "#/$defs/component" }],
+              "required": ["runs_sampled", "runs_complete", "blind_spots", "by_step"],
+              "properties": {
+                "runs_sampled": { "type": "integer" },
+                "runs_complete": { "type": "integer" },
+                "blind_spots": { "type": "array", "items": { "type": "string" }, "description": "Declared steps with no attributable telemetry in the window." },
+                "by_step": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "required": ["present_runs", "complete_runs", "fraction", "missing"],
+                    "properties": {
+                      "present_runs": { "type": "integer" },
+                      "complete_runs": { "type": "integer" },
+                      "fraction": { "$ref": "#/$defs/score" },
+                      "missing": { "type": "object", "additionalProperties": { "type": "integer" } }
+                    }
+                  }
+                }
+              }
+            },
+            "answerability": {
+              "allOf": [{ "$ref": "#/$defs/component" }],
+              "required": ["declared", "answerable", "not_evaluated", "scenarios"],
+              "properties": {
+                "declared": { "type": "integer" },
+                "answerable": { "type": "integer" },
+                "not_evaluated": { "type": "integer" },
+                "scenarios": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["step", "index", "scenario", "status"],
+                    "properties": {
+                      "step": { "type": "string" },
+                      "index": { "type": "integer" },
+                      "scenario": { "type": "string" },
+                      "status": { "enum": ["answerable", "unanswerable", "not_evaluated"] },
+                      "dialect": { "type": ["string", "null"] },
+                      "source": { "type": ["string", "null"] },
+                      "rows": { "type": ["integer", "null"] },
+                      "columns": { "type": "array", "items": { "type": "string" } },
+                      "reason": { "type": ["string", "null"] }
+                    }
+                  }
+                }
+              }
+            },
+            "detectability": {
+              "allOf": [{ "$ref": "#/$defs/component" }],
+              "required": ["targets"],
+              "properties": {
+                "alert_latency_bound_s": { "type": "number" },
+                "targets": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["scope", "slo", "target", "observed", "breached_in_window", "alert", "detectable", "reason"],
+                    "properties": {
+                      "scope": { "type": "string", "description": "flow, or a step id" },
+                      "slo": { "type": "string" },
+                      "target": { "type": "number" },
+                      "observed": { "type": ["number", "null"] },
+                      "breached_in_window": { "type": ["boolean", "null"] },
+                      "alert": { "type": ["object", "null"] },
+                      "detectable": { "type": "boolean" },
+                      "reason": { "type": ["string", "null"] }
+                    }
+                  }
+                }
+              }
+            },
+            "cost_attribution": {
+              "allOf": [{ "$ref": "#/$defs/component" }],
+              "required": ["by_step", "flow_attributable", "cost_attributes"],
+              "properties": {
+                "by_step": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "required": ["attributable", "attributes_seen", "spans", "cost_usd_total"],
+                    "properties": {
+                      "attributable": { "type": "boolean" },
+                      "attributes_seen": { "type": "array", "items": { "type": "string" } },
+                      "spans": { "type": "integer" },
+                      "cost_usd_total": { "type": ["number", "null"] }
+                    }
+                  }
+                },
+                "flow_attributable": { "type": "boolean" },
+                "cost_attributes": { "type": "array", "items": { "type": "string" } }
+              }
+            },
+            "execution_evidence": {
+              "allOf": [{ "$ref": "#/$defs/component" }],
+              "required": ["steps"],
+              "properties": {
+                "run_binding": { "enum": ["warn", "strict"] },
+                "warnings": { "type": "array", "items": { "type": "string" } },
+                "steps": {
+                  "type": "object",
+                  "description": "Keyed by the steps declared ND0/ND1 (binding B7).",
+                  "additionalProperties": {
+                    "type": "object",
+                    "required": ["runs", "verified", "fraction", "statuses", "run_binding_mismatches", "examples"],
+                    "properties": {
+                      "runs": { "type": "integer" },
+                      "verified": { "type": "integer" },
+                      "fraction": { "$ref": "#/$defs/score" },
+                      "statuses": { "type": "object", "additionalProperties": { "type": "integer" } },
+                      "run_binding_mismatches": { "type": "integer" },
+                      "examples": { "type": "array" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "decomposition": {
+          "type": "object",
+          "required": ["sync_frontier", "async_tail", "latency", "steps"],
+          "properties": {
+            "sync_frontier": { "type": "array", "items": { "type": "string" } },
+            "async_tail": { "type": "array", "items": { "type": "string" } },
+            "latency": { "type": "object" },
+            "availability": { "type": "object" },
+            "steps": { "type": "object" }
+          }
+        },
+        "conformance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["window", "runs", "summary"],
+          "properties": {
+            "window": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["reading", "declared", "observed", "absent", "divergent"],
+              "properties": {
+                "reading": { "enum": ["convergent", "absent", "divergent"] },
+                "declared": { "type": "array", "items": { "type": "string" } },
+                "observed": { "type": "array", "items": { "type": "string" } },
+                "absent": { "type": "array", "items": { "type": "string" } },
+                "divergent": { "type": "array", "items": { "type": "string" } }
+              }
+            },
+            "runs": { "type": "array", "items": { "$ref": "#/$defs/runReading" } },
+            "summary": {
+              "type": "object",
+              "required": ["runs", "by_reading", "off_plan_steps", "non_convergent_runs"],
+              "properties": {
+                "runs": { "type": "integer" },
+                "by_reading": { "type": "object", "additionalProperties": { "type": "integer" } },
+                "off_plan_steps": { "type": "object", "additionalProperties": { "type": "integer" } },
+                "non_convergent_runs": { "type": "integer" }
+              }
+            }
+          }
+        },
+        "observed_slos": { "type": "object" },
+        "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+        "delta": {
+          "type": ["object", "null"],
+          "required": ["baseline_score", "score", "delta", "components"],
+          "properties": {
+            "baseline_score": { "$ref": "#/$defs/score" },
+            "score": { "$ref": "#/$defs/score" },
+            "delta": { "type": "number" },
+            "components": { "type": "object" }
+          }
+        }
+      }
+    }
+  }
+}

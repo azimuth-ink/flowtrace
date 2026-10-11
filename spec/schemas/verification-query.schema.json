@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azimuth.ink/schemas/flowtrace.queries/v0.1/verification-query.schema.json",
+  "title": "Verification query contract v0.1",
+  "description": "FTC §4.4 'portability by contract': a verification query is declared with a dialect and an expected result shape; an evaluator is conformant iff it executes the dialect and checks the returned rows against the shape. Two documents validate here: (a) a resolved query object {dialect, text, expected_shape} — what the engine evaluates, whether it came from the descriptor's own `verification_query` / `dialect` / `expected_shape` fields (flow.spec/v0.2) or from a binding; (b) a query-binding file (apiVersion flowtrace.queries/v0.1) that binds (flow, step, scenario) to such an object, used when the descriptor carries a natural-language placeholder (`<...>`) or a dialect the adapter does not execute. See spec/coverage-engine.md §5.",
+  "oneOf": [
+    { "$ref": "#/$defs/resolvedQuery" },
+    { "$ref": "#/$defs/bindingFile" }
+  ],
+  "$defs": {
+    "dialect": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*$",
+      "maxLength": 32,
+      "description": "Query language, e.g. otel-sql (the reference adapter), promql, traceql, datadog. Adapters declare the dialects they execute."
+    },
+    "expectedShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_rows": { "type": "integer", "minimum": 0, "default": 1, "description": "The result must have at least this many rows." },
+        "required_columns": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Every name must be a column of the result (order-insensitive)."
+        }
+      },
+      "description": "The result contract. {min_rows: 1} when omitted."
+    },
+    "resolvedQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dialect", "text"],
+      "properties": {
+        "dialect": { "$ref": "#/$defs/dialect" },
+        "text": { "type": "string", "minLength": 1, "description": "The query in that dialect. A text of the form `<...>` is a placeholder (natural-language intent), never executed." },
+        "expected_shape": { "$ref": "#/$defs/expectedShape" }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["flow", "step", "dialect", "text"],
+      "anyOf": [{ "required": ["scenario"] }, { "required": ["index"] }],
+      "properties": {
+        "flow": { "type": "string", "description": "metadata.id of the flow" },
+        "step": { "type": "string", "description": "step id within the flow" },
+        "scenario": { "type": "string", "description": "debug_scenarios[].scenario (exact match)" },
+        "index": { "type": "integer", "minimum": 0, "description": "position in debug_scenarios[] (alternative to scenario)" },
+        "dialect": { "$ref": "#/$defs/dialect" },
+        "text": { "type": "string", "minLength": 1 },
+        "expected_shape": { "$ref": "#/$defs/expectedShape" }
+      }
+    },
+    "bindingFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["apiVersion", "bindings"],
+      "properties": {
+        "apiVersion": { "const": "flowtrace.queries/v0.1" },
+        "bindings": { "type": "array", "items": { "$ref": "#/$defs/binding" } }
+      }
+    }
+  }
+}

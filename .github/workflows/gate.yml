@@ -1,0 +1,124 @@
+name: gate
+# The `three-repo` job is the test that the three artifacts are one system:
+# the canonical flow validates under polydiagram's rules, agent-dec's
+# flow-bound run verifies against flowtrace's flows as the registry, and the
+# gate reproduces the expected reports with execution evidence enabled.
+#
+# PINS. polydiagram is consumed at azimuth-ink/polydiagram@9345577 (v0.2-canon,
+# software 0.3.0) and agent-dec at azimuth-ink/agent-dec@e8075f9 (v0.2-canon,
+# software 0.2.0). Those refs exist only on unpushed branches today: until they
+# are pushed, this job cannot check them out or pip-install them from GitHub,
+# and the same steps must be run locally from sibling checkouts —
+# `make dev && make check` (SIBLINGS=.. by default) does exactly that, with
+# the same commands as below. Once pushed, replace nothing: the refs below are
+# the pins.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"   # weekly: the same job against the companions' latest main (drift surfaces here)
+
+env:
+  POLYDIAGRAM_REF: 9345577
+  AGENT_DEC_REF: e8075f9
+
+jobs:
+  three-repo:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with: { repository: azimuth-ink/polydiagram, ref: "${{ env.POLYDIAGRAM_REF }}", path: siblings/polydiagram }
+      - uses: actions/checkout@v5
+        with: { repository: azimuth-ink/agent-dec, ref: "${{ env.AGENT_DEC_REF }}", path: siblings/agent-dec }
+      - uses: actions/setup-python@v6
+        with: { python-version: "${{ matrix.python-version }}" }
+
+      - name: Install flowtrace, dev dependencies and the pinned companions
+        # The companions are installed from the pinned git refs (identical to the
+        # checkouts above). Locally: `make dev`, which installs the same two
+        # packages from the sibling checkouts.
+        run: |
+          pip install -r requirements-dev.txt
+          pip install "polydiagram @ git+https://github.com/azimuth-ink/polydiagram@${POLYDIAGRAM_REF}" \
+                      "agent-dec @ git+https://github.com/azimuth-ink/agent-dec@${AGENT_DEC_REF}"
+          pip install -e .
+
+      - name: Unit, property and gate tests (pytest + hypothesis)
+        env: { FLOWTRACE_SIBLINGS: "${{ github.workspace }}/siblings" }
+        run: python3 -m pytest -q
+
+      - name: Canonical descriptor is byte-identical across the three repositories
+        run: |
+          cmp examples/flows/quote-issue.flow.yaml tests/fixtures/quote-issue.canon.yaml
+          cmp examples/flows/quote-issue.flow.yaml siblings/polydiagram/examples/retail-quote.flow.yaml
+          cmp examples/flows/quote-issue.flow.yaml siblings/agent-dec/examples/flow-bound/flows/quote-issue.flow.yaml
+          for f in run step-s1 step-s2 step-s3 step-s4 step-s5 step-s6; do
+            cmp examples/dec/flow-bound/$f.dec.json siblings/agent-dec/examples/flow-bound/$f.dec.json
+          done
+          cmp examples/dec/issuer-pubkey.pem siblings/agent-dec/examples/issuer-pubkey.pem
+          for m in examples/dec/methods/*.json; do cmp "$m" "siblings/agent-dec/examples/methods/$(basename "$m")"; done
+
+      - name: Flows validate with polydiagram's validator (R1–R11, strict, against its registry)
+        run: polydiagram-flows --dir examples/flows --registry siblings/polydiagram/examples/registry-stub.yaml --strict
+
+      - name: agent-dec's flow-bound example verifies with flowtrace's flows as the registry (step 1b FB4 + conformance)
+        run: |
+          # --methods: the installed verifier's default methods directory is relative to its package, not the checkout
+          dec-verify --dir siblings/agent-dec/examples/flow-bound --methods siblings/agent-dec/examples/methods \
+                     --flow-registry examples/flows --require-convergent
+          dec-verify --dir examples/dec/flow-bound --methods examples/dec/methods \
+                     --trust-bundle examples/dec/trust-bundle.json --require-convergent
+
+      - name: Gate — the three windows with execution evidence, certificates from the agent-dec checkout
+        run: |
+          mkdir -p build/reports
+          ARGS="--flows examples/flows --config flowtrace.yaml --alerts examples/alerts.yaml \
+                --queries examples/queries/quote-issue.queries.yaml \
+                --trust-bundle examples/dec/trust-bundle.json --dec-dir siblings/agent-dec/examples/flow-bound \
+                --execution-evidence --reproducible"
+          flowtrace gate $ARGS --telemetry examples/telemetry/quote-issue.full.otlp.jsonl --out build/reports/quote-issue.full.json
+          if flowtrace gate $ARGS --telemetry examples/telemetry/quote-issue.s5-silent.otlp.jsonl \
+               --baseline build/reports/quote-issue.full.json --out build/reports/quote-issue.s5-silent.json; then
+            echo "expected the s5-silent window to fail the gate" >&2; exit 1; fi
+          if flowtrace gate $ARGS --telemetry examples/telemetry/quote-issue.s4-missing-attr.otlp.jsonl \
+               --baseline build/reports/quote-issue.full.json --out build/reports/quote-issue.s4-missing-attr.json; then
+            echo "expected the s4-missing-attr window to fail the gate" >&2; exit 1; fi
+
+      - name: Expected reports reproduced byte for byte
+        run: |
+          for w in full s5-silent s4-missing-attr; do
+            cmp build/reports/quote-issue.$w.json examples/expected/quote-issue.$w.json && echo "identical: quote-issue.$w.json"
+          done
+          flowtrace validate-report examples/expected/quote-issue.full.json
+
+      - name: Synthetic telemetry regenerates identically (seeded)
+        run: |
+          python3 tools/make_synthetic_telemetry.py --out-dir build/telemetry
+          for w in full s5-silent s4-missing-attr; do cmp build/telemetry/quote-issue.$w.otlp.jsonl examples/telemetry/quote-issue.$w.otlp.jsonl; done
+
+  # Weekly: the same steps against the companions' latest `main`, so that a
+  # change in either specification surfaces here before a release pins it.
+  # (polydiagram and agent-dec carry the mirror of this job against flowtrace's
+  # latest tag.) A failure here is a drift report, not a broken pin.
+  three-repo-latest:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with: { repository: azimuth-ink/polydiagram, ref: main, path: siblings/polydiagram }
+      - uses: actions/checkout@v5
+        with: { repository: azimuth-ink/agent-dec, ref: main, path: siblings/agent-dec }
+      - uses: actions/setup-python@v6
+        with: { python-version: "3.12" }
+      - name: Install from the sibling checkouts (latest) and run everything the pinned job runs
+        env: { FLOWTRACE_SIBLINGS: "${{ github.workspace }}/siblings", PIP_FLAGS: "" }
+        run: |
+          make dev SIBLINGS="$GITHUB_WORKSPACE/siblings" PIP_FLAGS=""
+          make check SIBLINGS="$GITHUB_WORKSPACE/siblings"

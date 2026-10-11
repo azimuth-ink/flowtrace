@@ -1,0 +1,1 @@
+{"method_kind":"calc.v0","output":"decision","params":["limit","exposure"],"procedure":"decision = 'approve' if exposure <= limit else 'refer'"}

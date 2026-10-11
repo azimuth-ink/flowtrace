@@ -1,0 +1,88 @@
+# flowtrace default configuration — software 0.1.0, implementing FTC v1.1.
+#
+# Every constant below is a DEFAULT the engine ships, overridable by passing
+# your own file to `flowtrace gate --config`. The paper states these values
+# as illustrative, not normative (FTC §4.2, §4.3, §4.5; shared-canon
+# resolution E); the engine makes them concrete so that two deployments
+# running the same config produce the same report. Omitted keys fall back to
+# the values here (the engine merges your file over this one).
+apiVersion: flowtrace.config/v0.1
+
+# ---------------------------------------------------------------------------
+# FTC §4.2 — consequence-based prioritization: the tier policy table.
+# coverage_threshold: the score a flow of this tier must reach (gate).
+# sampling_floor: minimum effective trace sampling for the tier ("always" = 1.0).
+# alert_latency_s: a configured alert must detect a breach within this bound
+#   (the breach-detectability component, §4.5).
+# ir_sla_s: incident-response SLA, recorded in the report for routing; null =
+#   "next business day" (P3), which is a calendar rule, not a number of seconds.
+# score_min: lower bound of the criticality score that maps to the tier.
+# require_convergent: when true, unresolved off-plan (divergent) findings fail
+#   the gate for the tier (§4.8 "a tier threshold may require zero unresolved
+#   off-plan findings for P0 flows").
+# answerability_required: whether the gate requires the answerability block
+#   (slo / required_telemetry / debug_scenarios) on at least one step (canon D3:
+#   "P0 flows as the only tier where the coverage gate requires it").
+tiers:
+  P0: { coverage_threshold: 1.00, sampling_floor: 1.00, alert_latency_s: 60,   ir_sla_s: 900,   score_min: 7.0, require_convergent: true,  answerability_required: true }
+  P1: { coverage_threshold: 0.90, sampling_floor: 0.80, alert_latency_s: 300,  ir_sla_s: 3600,  score_min: 5.0, require_convergent: false, answerability_required: false }
+  P2: { coverage_threshold: 0.75, sampling_floor: 0.50, alert_latency_s: 900,  ir_sla_s: 14400, score_min: 3.0, require_convergent: false, answerability_required: false }
+  P3: { coverage_threshold: 0.50, sampling_floor: 0.10, alert_latency_s: 3600, ir_sla_s: null,  score_min: 0.0, require_convergent: false, answerability_required: false }
+
+# FTC §4.2 — criticality score from weighted business-impact dimensions
+# (one embodiment: weighted sum over bounded scales; any dimension at its
+# maximum forces P0). Used by `flowtrace tier` and by
+# flowtrace.tiering.tier_from_dimensions; a declared metadata.criticality
+# always wins over a derived one.
+criticality_score:
+  dimensions:                      # weights sum to 1.0
+    revenue_impact: 0.30
+    user_impact: 0.30
+    frequency: 0.15
+    data_sensitivity: 0.15
+    operational_complexity: 0.10
+  scale: { critical: 10, high: 7, medium: 4, low: 1 }   # bounded 0..10
+  maximal_dimension_forces_p0: true
+
+# ---------------------------------------------------------------------------
+# FTC §4.3 — SLA-to-SLO decomposition (restated over steps, canon D1).
+decomposition:
+  criticality_factor: { P0: 0.8, P1: 0.9, P2: 1.0, P3: 1.2 }   # §4.3 step 4 (tighter for higher criticality)
+  nd_factor: { ND0: 0.9, ND1: 1.0, ND2: 1.1, ND3: 1.25, none: 1.0 }  # §4.3 step 4b (nondeterminism factor; undeclared = 1.0)
+  safety_margin: 0.9                                           # §4.3 step 5
+  error_factor: { P0: 0.5, P1: 0.75, P2: 1.0, P3: 1.5 }        # §4.3 step 6 (error-budget allocation)
+  p95_from_p99: 0.7                                            # §4.3 step 8 (p95 ≈ 0.7 × p99)
+  availability_ceiling: 99.99                                  # §4.3 availability rule (cap)
+  cold_start:                                                  # §4.3 cold-start embodiment
+    strategy: equal_split          # equal_split | criticality_weighted  (declared_prior: via `history` input)
+    min_sample_runs: 30            # observed runs needed before shares come from history; below it the cold-start allocation applies
+
+# ---------------------------------------------------------------------------
+# FTC §4.5 — multi-dimensional coverage scoring. The paper calls these weights
+# illustrative; they are the engine's defaults (shared-canon resolution E).
+scoring:
+  weights: { completeness: 0.40, answerability: 0.30, detectability: 0.20, cost_attribution: 0.10 }
+  weights_with_execution_evidence: { completeness: 0.35, answerability: 0.25, detectability: 0.20, cost_attribution: 0.10, execution_evidence: 0.10 }
+  execution_evidence:
+    enabled: false                 # optional fifth component (§4.5, binding B7); `flowtrace gate --execution-evidence` also enables it
+    run_binding: warn              # warn | strict — whether a verified certificate must also bind to the span's run (subject.run_id == trace id, B3/B4).
+                                   # B7 (§4.7) requires trust-bundle verification and subject.flow match; run binding is the stronger check.
+                                   # `strict` is recommended in production; the shipped example reuses one signed run across synthetic runs (see README).
+  # Components that are not applicable to a flow (e.g. no asserted SLO target
+  # at all for detectability) are dropped and the remaining weights
+  # renormalized; a component the tier REQUIRES is always applicable and
+  # scores 0 when its inputs are missing.
+
+# ---------------------------------------------------------------------------
+# FTC §4.5 cost attribution — a step is attributable when its boundary spans
+# carry any of these attributes (cost/usage ledger columns are a later adapter).
+cost:
+  attributes: [cost.usd, cost.tokens, llm.usage.total_tokens, gen_ai.usage.total_tokens]
+
+# ---------------------------------------------------------------------------
+# Telemetry ingest (FTC §4.7). Deprecated attribute aliases are accepted with a
+# warning through every flow.spec/v0.x version and never emitted (resolution C).
+telemetry:
+  default_dialect: otel-sql        # a verification query with no dialect is otel-sql (prompt C3)
+  accept_deprecated_aliases: true  # flow.segment.id -> flow.step ; flow.priority -> flow.criticality
+  assumed_sampling_rate: 1.0       # a file export is assumed complete unless `flowtrace gate --sampling-rate` says otherwise

@@ -1,0 +1,50 @@
+# Alert configuration consumed by the breach-detectability component (FTC §4.5;
+# spec/coverage-engine.md §5.3). One entry per (flow, scope, SLO key): the
+# threshold the alert fires at (same unit as the SLO key), its evaluation
+# window and notification latency. A breach of an SLO target is detectable
+# iff an alert covers the target, its threshold is at least as tight as the
+# target, and evaluation_window_s + notification_latency_s is within the
+# tier's alert-latency bound (P0: 60 s by default).
+#
+# In a real deployment this file is exported from the alerting system
+# (Alertmanager rules, Datadog monitors, ...) by an importer — see README
+# "What a real deployment must add".
+apiVersion: flowtrace.alerts/v0.1
+alerts:
+  - id: quote-issue-sync-latency-p95
+    flow: quote-issue
+    scope: flow
+    slo: latency_p95_ms          # trigger -> s4 (synchronous frontier)
+    threshold: 1800
+    evaluation_window_s: 30
+    notification_latency_s: 15
+  - id: quote-issue-async-completion-p99
+    flow: quote-issue
+    scope: flow
+    slo: async_completion_p99_s  # trigger -> s6
+    threshold: 120
+    evaluation_window_s: 30
+    notification_latency_s: 15
+  - id: quote-issue-availability
+    flow: quote-issue
+    scope: flow
+    slo: availability
+    threshold: 99.9
+    evaluation_window_s: 30
+    notification_latency_s: 15
+  - id: quote-issue-s4-latency-p99
+    flow: quote-issue
+    scope: step
+    step: s4
+    slo: latency_p99_ms          # asserted per-step SLO on s4 (120 ms)
+    threshold: 120
+    evaluation_window_s: 30
+    notification_latency_s: 15
+  - id: quote-issue-s4-error-rate
+    flow: quote-issue
+    scope: step
+    step: s4
+    slo: error_rate_percent      # asserted per-step SLO on s4 (0.01 %)
+    threshold: 0.01
+    evaluation_window_s: 30
+    notification_latency_s: 15

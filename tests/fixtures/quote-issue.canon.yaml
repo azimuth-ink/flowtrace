@@ -1,0 +1,65 @@
+apiVersion: flow.spec/v0.2
+kind: Flow
+metadata:
+  id: quote-issue
+  name: "Retail quote issuance"
+  version: 2.0.0
+  owner: { business: retail-products, technical: team-quotes }
+  criticality: P0
+  description: >
+    Customer-initiated quote request through pricing, limits check, and
+    asynchronous document delivery. Shared running example across FTC, PD and DEC.
+spec:
+  trigger: { type: user_interaction, description: "Customer submits quote request" }
+  steps:
+    - id: s1
+      component: edge.api-gateway
+      op: receive
+      kind: sync
+      next: [s2]
+    - id: s2
+      component: identity.session
+      op: authorize
+      kind: sync
+      next: [s3]
+    - id: s3
+      component: payments.quote-engine
+      op: price
+      kind: sync
+      next: [s4]
+    - id: s4
+      component: risk.limits-check
+      op: evaluate
+      kind: sync
+      nd_class: ND0
+      method: { ref: methods/limits-check, version: 3.1.0, digest: "sha256:fad9362bcab1866e2e08bfb0f98c5a199b01b231ad13b855dcee86444e43d6b6" }
+      slo: { latency_p99_ms: 120, error_rate_percent: 0.01 }
+      required_telemetry:
+        traces:
+          - span_name: risk.limits-check/evaluate
+            required_attributes: [flow.id, flow.step, risk.limit_id, risk.decision]
+        metrics:
+          - { name: step_duration_seconds, type: histogram }
+      debug_scenarios:
+        - scenario: "Limit evaluated against stale reference data"
+          required_data: ["reference-data version per evaluation", "decision by version"]
+          verification_query: "<query returning decisions grouped by reference-data version for flow.step=s4 over the window>"
+      next: [s5]
+    - id: s5
+      component: docs.render
+      op: generate
+      kind: async
+      nd_class: ND2
+      next: [s6]
+    - id: s6
+      component: notify.customer
+      op: deliver
+      kind: async
+  slos:
+    availability: 99.9
+    latency_p95_ms: 1800          # trigger → s4 (synchronous frontier)
+    async_completion_p99_s: 120   # trigger → s6
+  telemetry:
+    required_signals: [trace, metric]
+    attribute_namespace: flow
+    sampling_floor: 0.10

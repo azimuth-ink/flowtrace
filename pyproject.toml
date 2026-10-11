@@ -1,0 +1,93 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flowtrace"
+version = "0.1.0"
+description = "Reference implementation of Flow-Based Telemetry Coverage (FTC v1.1): consequence-based tiering, SLA-to-SLO decomposition over step DAGs, answerability by verification-query contract, the multi-dimensional coverage score (completeness, answerability, breach detectability, cost attribution, execution evidence), conformance against the declared flow as authorized plan, and the CI coverage gate — built on polydiagram's flow.spec/v0.2 and agent-dec's step certificates."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Jeff Gray", email = "jeff@azimuth.ink" },
+]
+keywords = [
+  "observability",
+  "distributed-tracing",
+  "opentelemetry",
+  "slo",
+  "coverage",
+  "sre",
+  "conformance",
+  "flow-based-telemetry-coverage",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: System :: Monitoring",
+]
+dependencies = [
+  "pyyaml>=6.0",
+  "jsonschema>=4.21",
+  "duckdb>=1.1",
+  "rfc8785>=0.1.4",
+]
+
+[project.urls]
+Homepage = "https://azimuth.ink"
+Repository = "https://github.com/azimuth-ink/flowtrace"
+Paper = "https://doi.org/10.5281/zenodo.21415947"
+
+[project.scripts]
+flowtrace = "flowtrace.cli:main"
+
+[project.optional-dependencies]
+# The companion repositories are consumed, never redefined (one schema, one
+# owner). Pinned to the v0.2-canon commits; see README "Pins" for the local
+# sibling-checkout alternative used until those refs are pushed.
+companions = [
+  "polydiagram @ git+https://github.com/azimuth-ink/polydiagram@9345577",
+  "agent-dec @ git+https://github.com/azimuth-ink/agent-dec@e8075f9",
+]
+dev = ["pytest>=8", "hypothesis>=6"]
+
+# The [companions] extra pins git refs (direct references), which hatchling
+# refuses by default; PyPI would refuse them too, so a PyPI release drops the
+# extra and documents the pins in README instead.
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flowtrace"]
+
+# The normative schemas stay in spec/schemas/ (where spec/coverage-engine.md
+# references them) and the shipped default configuration stays at the repo
+# root; both are mapped into the package at build time so an installed
+# `flowtrace` finds them without a checkout. Nothing is duplicated in the repo.
+[tool.hatch.build.targets.wheel.force-include]
+"spec/schemas/coverage-report.schema.json" = "flowtrace/schemas/coverage-report.schema.json"
+"spec/schemas/verification-query.schema.json" = "flowtrace/schemas/verification-query.schema.json"
+"flowtrace.yaml" = "flowtrace/flowtrace.yaml"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/flowtrace",
+  "spec",
+  "examples",
+  "tests",
+  "tools",
+  "flowtrace.yaml",
+  "README.md",
+  "CHANGELOG.md",
+  "LICENSE",
+  "CITATION.cff",
+  "requirements-dev.txt",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

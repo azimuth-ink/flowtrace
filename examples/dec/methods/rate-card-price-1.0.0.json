@@ -1,0 +1,1 @@
+{"method_kind":"calc.v0","output":"price","params":["quantity","unit_price"],"procedure":"price = round(quantity * unit_price, 2)"}

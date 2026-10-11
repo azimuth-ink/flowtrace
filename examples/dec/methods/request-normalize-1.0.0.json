@@ -1,0 +1,1 @@
+{"method_kind":"calc.v0","output":"request","params":["sku","quantity"],"procedure":"request = {'sku': sku.strip().upper(), 'quantity': int(quantity)}"}

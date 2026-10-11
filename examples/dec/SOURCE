@@ -1,0 +1,15 @@
+# Provenance of the signed artifacts under examples/dec/ (never edited by hand;
+# canon invariant 3). Copied byte-for-byte from the companion repository:
+#
+#   repository: azimuth-ink/agent-dec
+#   pin:        e8075f9  (v0.2-canon, software 0.2.0)
+#   files:      examples/flow-bound/{run,step-s1..s6}.dec.json  -> flow-bound/
+#               examples/issuer-pubkey.pem                      -> issuer-pubkey.pem
+#               examples/methods/*.json                         -> methods/   (content-addressed; ND0 replay)
+#
+# trust-bundle.json is a dec-trust/0.2 bundle built by flowtrace from that
+# public key (agent-dec ships the example's issuer key as a bare PEM, not as a
+# bundle): issuer operator.example, key k-2026-10, active, not_before
+# 2026-10-01T00:00:00Z, flow_registries[] pointing at ../flows/. A test
+# (tests/test_fixtures.py) asserts the PEM inside the bundle equals the
+# sibling repository's examples/issuer-pubkey.pem when that checkout exists.

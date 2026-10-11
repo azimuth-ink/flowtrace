@@ -1,0 +1,35 @@
+# Query bindings (flowtrace.queries/v0.1; spec/schemas/verification-query.schema.json).
+#
+# The canonical quote-issue descriptor (examples/flows/quote-issue.flow.yaml,
+# byte-identical to the papers) carries its s4 verification query as a
+# natural-language placeholder:
+#   "<query returning decisions grouped by reference-data version for flow.step=s4 over the window>"
+# A placeholder is never executed. This binding supplies the executable form
+# in the reference adapter's dialect, with the result contract the engine
+# checks, without touching the descriptor (FTC §4.4: a scenario may carry
+# the same query in more than one dialect; portability is by contract).
+#
+# The scenario is answerable iff the query returns at least one row per
+# observed reference-data version with its decision counts (paper §4.4,
+# worked example). Decisions are grouped only where both the version and the
+# decision are present — a window whose s4 spans lack risk.decision returns
+# no rows and the scenario is unanswerable, which is the distinction between
+# completeness and answerability the paper draws.
+apiVersion: flowtrace.queries/v0.1
+bindings:
+  - flow: quote-issue
+    step: s4
+    scenario: "Limit evaluated against stale reference data"
+    dialect: otel-sql
+    text: |
+      SELECT attributes['risk.reference_data_version'] AS reference_data_version,
+             attributes['risk.decision']               AS decision,
+             count(*)                                  AS n
+      FROM spans
+      WHERE attributes['flow.id']   = 'quote-issue'
+        AND attributes['flow.step'] = 's4'
+        AND attributes['risk.reference_data_version'] IS NOT NULL
+        AND attributes['risk.decision'] IS NOT NULL
+      GROUP BY 1, 2
+      ORDER BY 1, 2
+    expected_shape: { min_rows: 1, required_columns: [reference_data_version, decision, n] }
