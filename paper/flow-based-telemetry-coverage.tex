@@ -69,7 +69,7 @@ A Method for Measuring and Governing Observability\\ by Business-Flow Consequenc
 \end{center}
 
 \begin{abstract}
-\noindent A method, system, and data format are disclosed for measuring and governing software observability in terms of end-to-end \emph{business flows} rather than per-service instrumentation. Critical flows spanning multiple services are declared as first-class entities; each flow is scored by business consequence to derive a priority tier; flow-level service-level agreements (SLAs) are algorithmically decomposed into per-segment service-level objectives (SLOs); the telemetry required to detect, debug, and resolve issues in each segment is specified; and a multi-dimensional \emph{coverage score} is computed that measures not merely whether instrumentation exists, but whether the available telemetry can actually \emph{answer} the diagnostic questions that arise when a flow degrades. Coverage is enforced in continuous integration so that changes reducing the observability of high-consequence flows are blocked. The disclosed methods are realized on top of distributed-tracing standards (for example, OpenTelemetry) using a declared \code{flow.*} attribute namespace. Version 1.1 additionally discloses step-primary flow modeling with derived segments, a nondeterminism factor in budget allocation, execution-evidence coverage, dialect-contract verification queries, bounded iteration, and conformance of observed executions against the declared flow read as an authorized plan; no disclosure made in version 1.0 is withdrawn.
+\noindent A method, system, and data format are disclosed for measuring and governing software observability in terms of end-to-end \emph{business flows} rather than per-service instrumentation. Critical flows spanning multiple services are declared as first-class entities; each flow is scored by business consequence to derive a priority tier; flow-level service-level agreements (SLAs) are algorithmically decomposed into per-segment service-level objectives (SLOs); the telemetry required to detect, debug, and resolve issues in each segment is specified; and a multi-dimensional \emph{coverage score} is computed that measures not merely whether instrumentation exists, but whether the available telemetry can actually \emph{answer} the diagnostic questions that arise when a flow degrades. Coverage is enforced in continuous integration so that changes reducing the observability of high-consequence flows are blocked. The disclosed methods are realized on top of distributed-tracing standards (for example, OpenTelemetry) using a declared \code{flow.*} attribute namespace. Version 1.1 additionally discloses step-primary flow modeling with derived segments, a nondeterminism factor in budget allocation, execution-evidence coverage, dialect-contract verification queries, bounded iteration, and conformance of observed executions against the declared flow read as an authorized plan; no disclosure made in version 1.0 is withdrawn. The revision of 2026-10-11 further discloses an unsampled assurance stream with attribute classes, two-sided degradation and veto indicators, authorization coverage for effect steps, and conformance over declared degradation paths, repeated attempts and cancellation across runs; again, no disclosure is withdrawn.
 \end{abstract}
 
 \noindent\textbf{Relationship to companion work.} This disclosure is one of three companion publications. \emph{The Polymorphic Diagram} (Gray 2026b, DOI 10.5281/zenodo.21524592) embeds declared flows in a governed architecture-as-code substrate with bidirectional conformance and a live diagram surface, and owns the \code{flow.spec} descriptor schema. \emph{Deterministic Execution Certificates} (Gray 2026c, DOI 10.5281/zenodo.21525232) provides signed, hash-chained, per-step execution evidence for the steps of a run, graded by nondeterminism class. This paper owns consequence-based tiering, SLA-to-SLO decomposition, required-telemetry and answerability specification, and the multi-dimensional coverage score. The three share the terminology and identity bindings reproduced in the Terminology section.
@@ -146,6 +146,57 @@ In version 1.0 of this disclosure the primary unit was the segment (a transition
 \textbf{nondeterminism class} (\code{nd\_class}) & \code{ND0 | ND1 | ND2 | ND3} per DEC \S1.2. Optional per step in flow.spec v0.2; required in every DEC step certificate. & DEC (keep). PD/FTC: add. \\
 \addlinespace
 \textbf{method} & A content-addressed reference \code{\{ref, version, digest\}} to the reviewed, versioned executable artifact a step runs. Required for any step claiming ND0 or ND1; optional otherwise. & DEC (keep). PD step \code{op} is the human-readable verb label and stays; \code{method} is added beside it. FTC \code{operation} (e.g.\ \code{POST /api/v1/resource}) becomes \code{op}. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The following terms were added to the shared terminology in the revision of 2026-10-11 (control-plane mechanics) and are used in \S4.4, \S4.5 and \S4.8 of this disclosure with the meanings given here; each is defined in full in the companion publication that owns it.
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}p{2.7cm} p{7.1cm} p{5.6cm}@{}}
+\toprule
+\textbf{Canonical term} & \textbf{Definition} & \textbf{Replaces / reconciles} \\
+\midrule
+\textbf{outcome} & A declared terminal state of a run: \code{allow | block | clarify | review | error} by default; recorded in the run certificate manifest. & Added 2026-10-11; same in all three. FTC: the veto rate (\S4.5) counts runs with \code{outcome: block}. \\
+\addlinespace
+\textbf{degradation path} & A declared \code{on\_fail} edge from a step to another step or to an outcome. A run that takes a declared degradation path is \textbf{convergent} (it did what was declared), not divergent. & Added 2026-10-11; same in all three. FTC: \S4.5 (degradation rate), \S4.8. \\
+\addlinespace
+\textbf{latch} & A degradation path marked \code{latch: true}: once taken, the run may not re-enter the primary path; re-entry is divergent. & Added 2026-10-11; same in all three. FTC: \S4.8. \\
+\addlinespace
+\textbf{termination} & How a run ended, as a lifecycle state distinct from its business outcome: \code{completed | failed | cancelled | expired}. Recorded in the run certificate manifest beside \code{outcome}. & Added 2026-10-11; same in all three. FTC: \S4.8. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}p{2.7cm} p{7.1cm} p{5.6cm}@{}}
+\toprule
+\textbf{Canonical term} & \textbf{Definition} & \textbf{Replaces / reconciles} \\
+\midrule
+\textbf{gate} & A step that is the source of an \code{on\_fail} edge; its certified output determines whether the run continues on the primary path or takes that declared edge. \textbf{Gate authority} follows nondeterminism class: only an ND0/ND1 step may be the source of an \code{on\_fail} edge whose target is \code{block}; an ND2/ND3 step's edges may lead to \code{review}/\code{clarify}, or its output may be consumed by a later ND0 gate. & Added 2026-10-11; same in all three. PD owns the validator rule (binding B12); FTC cites it in \S4.5. \\
+\addlinespace
+\textbf{effect step} & A step whose execution has an external side effect (sends, writes, pays, deletes). Declared with \code{effect: true} and, when present, an idempotency key and attempt counter. & Added 2026-10-11; same in all three. FTC: \S4.5 (authorization coverage), \S4.8 (attempts). \\
+\addlinespace
+\textbf{attempt} & One execution of an effect step under a given idempotency key; \code{attempt\_id} increments; attempts share a key. Conformance collapses attempts of one declared step into that step. & Added 2026-10-11; same in all three. FTC: \S4.8. \\
+\addlinespace
+\textbf{authorization evidence} & A DEC artifact issued \emph{before} an effect step executes: a \textbf{policy-decision record} \code{\{decision\_id, decision: allow|deny, reason?, policy\_version (digest), as\_of, limits?, expiry?, approval\_ref?\}} committing to the intended action's inputs and signed by the policy authority. It records that a decision was obtained and what it was; it does not describe how it was made. A human approval is an \emph{input} it may reference, never a substitute: approval does not override denial. & Added 2026-10-11; DEC owns the artifact. FTC: its digest on the effect step's span is what authorization coverage (\S4.5) counts. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}p{2.7cm} p{7.1cm} p{5.6cm}@{}}
+\toprule
+\textbf{Canonical term} & \textbf{Definition} & \textbf{Replaces / reconciles} \\
+\midrule
+\textbf{completion evidence} & A DEC artifact issued \emph{after} an effect step: \code{\{status: completed | failed | unknown | reconciled, outputs commitment, external\_ref\_commitment?\}}. \code{unknown} records an ambiguous result; \code{reconciled} records the externally queried truth for the same idempotency key. & Added 2026-10-11; DEC owns the artifact. FTC: \S4.8 (attempts, reconciliation before retry). \\
+\addlinespace
+\textbf{task grant} & The grant a run executes under: \code{\{task\_id, scope (digest of the grant's resource and action constraints; the verifier sees only the digest), expiry\}}. Referenced by digest from step certificates and authorization evidence (\code{subject.task\_grant\_commitment}). A child run's grant is referenced from its parent's step that spawned it. & Added 2026-10-11; DEC owns the artifact. FTC: \S4.8 (cancellation propagation across parent and child runs). \\
+\addlinespace
+\textbf{assurance stream} & The part of a flow's telemetry that coverage and conformance are computed from: the boundary spans of declared steps with the \code{flow.*} and \code{dec.*} attributes and the required attributes of class \code{identifier} or \code{digest}, retained at \code{telemetry.assurance\_sampling\_floor} (in [\code{sampling\_floor}, 1.0]; 1.0 declares it unsampled). Attributes of class \code{content} are never carried on it. & Added 2026-10-11; FTC owns it (\S4.4, \S4.7). \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -255,7 +306,7 @@ kind: Flow
 metadata:
   id: quote-issue
   name: "Retail quote issuance"
-  version: 2.0.0
+  version: 2.1.0
   owner: { business: retail-products, technical: team-quotes }
   criticality: P0
   description: >
@@ -263,6 +314,7 @@ metadata:
     asynchronous document delivery. Shared running example across FTC, PD and DEC.
 spec:
   trigger: { type: user_interaction, description: "Customer submits quote request" }
+  outcomes: [allow, block, clarify, review, error]
   steps:
     - id: s1
       component: edge.api-gateway
@@ -278,6 +330,7 @@ spec:
       component: payments.quote-engine
       op: price
       kind: sync
+      on_fail: { outcome: review }
       next: [s4]
     - id: s4
       component: risk.limits-check
@@ -289,32 +342,43 @@ spec:
       required_telemetry:
         traces:
           - span_name: risk.limits-check/evaluate
-            required_attributes: [flow.id, flow.step, risk.limit_id, risk.decision]
+            required_attributes:
+              - { name: flow.id, class: identifier }
+              - { name: flow.step, class: identifier }
+              - { name: risk.limit_id, class: identifier }
+              - { name: risk.decision, class: identifier }
         metrics:
           - { name: step_duration_seconds, type: histogram }
       debug_scenarios:
         - scenario: "Limit evaluated against stale reference data"
           required_data: ["reference-data version per evaluation", "decision by version"]
           verification_query: "<query returning decisions grouped by reference-data version for flow.step=s4 over the window>"
+      on_fail: { outcome: block }
       next: [s5]
     - id: s5
       component: docs.render
       op: generate
       kind: async
       nd_class: ND2
+      on_fail: { to: s6, latch: true }      # deliver without the rendered document
       next: [s6]
     - id: s6
       component: notify.customer
       op: deliver
       kind: async
+      effect: true
+      attempts: { max: 3, on_exceed: { outcome: error } }
   slos:
     availability: 99.9
     latency_p95_ms: 1800          # trigger → s4 (synchronous frontier)
     async_completion_p99_s: 120   # trigger → s6
+  cancel_propagation_s: 30
+  max_decision_age_s: 300
   telemetry:
     required_signals: [trace, metric]
     attribute_namespace: flow
     sampling_floor: 0.10
+    assurance_sampling_floor: 1.0
 \end{lstlisting}
 
 A step is one component performing one operation, identified by \code{id} within the flow; steps form a directed acyclic graph through \code{next}, and a step's \code{kind} is one of \code{sync}, \code{async}, \code{fanout}, \code{choice} or \code{loop}. A \code{loop} step declares \code{bound: \{max: N, on\_exceed: fail | flag\}} with \(N \geq 1\) (\S4.8). The flow's criticality, owners, trigger, end-to-end SLOs (with the synchronous frontier distinguished from asynchronous completion) and telemetry requirements are declared once on the flow; the per-step blocks \code{criticality}, \code{slo}, \code{required\_telemetry}, \code{debug\_scenarios}, \code{nd\_class} and \code{method} are optional, so that a flow may be declared with no more than its path and then enriched. In the example, step \code{s4} carries the full answerability block and a content-addressed \code{method}; steps \code{s4} and \code{s5} carry a nondeterminism class, and the remaining steps are undeclared (an undeclared step carries no declaration-side constraint and is classified at issuance by the runtime). The segment, the primary unit of version 1.0, is in this modeling the edge between two consecutive steps, derived from \code{next}: it carries no identifier of its own, takes its endpoints' components as its source and target, and may optionally carry an SLO of its own (the latency of the hop) and network, authentication and authorization annotations. The two schemas map as follows:
@@ -343,11 +407,26 @@ a \code{segments[]} entry & the edge between two consecutive steps; the entry's 
 \code{flow.business\_impact} & \code{metadata.criticality} (derived per \S4.2, or asserted) \\
 \code{flow.sla} & \code{spec.slos} \\
 \code{flow.stakeholders} & \code{metadata.owner} \\
+--- (no version 1.0 equivalent) & \code{spec.outcomes}, per-step \code{on\_fail: \{to | outcome, latch?\}}, \code{spec.cancel\_propagation\_s}, \code{spec.max\_decision\_age\_s} (example version 2.1.0; \S4.8) \\
+--- (no version 1.0 equivalent) & per-step \code{effect: true} and \code{attempts: \{max, on\_exceed\}} (example version 2.1.0; \S4.5, \S4.8) \\
+\code{required\_attributes[]} (names) & \code{required\_attributes[]} entries as names or as \code{\{name, class\}} with \code{class: identifier | digest | content} (example version 2.1.0; \S4.4) \\
+\code{sampling\_strategy: "always"} (per trace entry) & \code{spec.telemetry.assurance\_sampling\_floor: 1.0} on the flow (example version 2.1.0; \S4.4, \S4.7) \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 Either modeling may be used: a specification may declare steps, segments, or both, with either as the primary unit (\S5). Where both are declared, the segment set must be consistent with the step graph (every declared segment is an edge of \code{next}, and every edge of \code{next} is at most one segment).
+
+\paragraph{Fields added in version 2.1.0 of the example.}
+Version 2.1.0 of the \code{quote-issue} example (the block above) adds optional fields only; every line of version 2.0.0 is unchanged except \code{metadata.version} and the form of \code{s4}'s \code{required\_attributes[]} entries, which are now objects. The fields are owned by the companion \code{flow.spec} schema; this subsection states what each one means for coverage and conformance, and the rules are given in \S4.4, \S4.5 and \S4.8.
+
+\emph{Outcomes and degradation paths.} The flow declares its terminal \code{outcomes} (\code{allow}, \code{block}, \code{clarify}, \code{review}, \code{error}; this list is also the default when a flow omits it), and three steps declare a degradation path: \code{s3} degrades to the outcome \code{review}, \code{s4} (the ND0 limits check) to the outcome \code{block}, and \code{s5} (the ND2 document render) to the step \code{s6} with \code{latch: true}, so that a run which delivers without the rendered document may not re-enter the render. \code{cancel\_propagation\_s: 30} is the window within which a cancelled run's child runs must have terminated (\S4.8); \code{max\_decision\_age\_s: 300} is the freshness window for an effect step's authorization evidence (binding B16 of the companion publications), and a span whose authorization evidence fails it is counted as not covered (\S4.5). A \code{loop} step's \code{bound.on\_exceed} accepts the same \code{\{to | outcome\}} form in addition to \code{fail | flag}, with \code{fail} equivalent to \code{outcome: error} and \code{flag} equivalent to continuing with a divergent finding; the \code{fail | flag} form disclosed above remains disclosed. For coverage these fields add no telemetry: a run that took a degradation path is a convergent run that is counted by the degradation rate (\S4.5), and a run that ended in \code{block} is counted by the veto rate.
+
+\begin{sloppypar}
+\emph{Effect step and attempts.} \code{s6} (\code{notify.customer}) is the flow's only effect step (\code{effect: true}): its execution has an external side effect, so its boundary span is where the three \code{dec.*} digests of \S4.7 (\code{dec.authz\_cert\_digest}, \code{dec.completion\_cert\_digest} and, when an approval was cited, \code{dec.approval\_digest}) are expected, and authorization coverage (\S4.5) is computed over it. \code{attempts: \{max: 3, on\_exceed: \{outcome: error\}\}} bounds the number of attempts under one idempotency key; conformance collapses the attempts into the one declared step and applies \code{on\_exceed} to the fourth (\S4.8).
+\end{sloppypar}
+
+\emph{Attribute classes and the assurance stream.} Each of \code{s4}'s four required attributes is declared in the object form with \code{class: identifier}, and the flow declares \code{assurance\_sampling\_floor: 1.0} beside its \code{sampling\_floor: 0.10}: the signals coverage and conformance are computed from (the assurance stream, \S4.4) are retained unsampled, while the full telemetry of the flow may be sampled at ten percent. The name-only form of \code{required\_attributes[]} used by version 2.0.0 remains valid on a flow that declares no assurance stream; because the example declares one, its entries are in the object form with an explicit class (\S4.4).
 
 \subsection{Consequence-Based Prioritization}
 Each flow receives a criticality score computed from weighted business-impact dimensions. In one embodiment, dimensions include revenue impact, user impact, frequency, data sensitivity, and operational complexity, each on a bounded scale, combined by a weighted sum to yield a criticality score. The score (or any single dimension reaching its maximum) maps to a discrete priority tier:
@@ -445,6 +524,10 @@ verification_query:
 
 The scenario is answerable if and only if the query, run over spans with \code{flow.id = quote-issue} and \code{flow.step = s4} in the evaluation window, returns at least one row per reference-data version observed, each with its decision counts. The required-attribute list for the span does not itself include a reference-data version attribute; answerability of this scenario therefore depends on the version being obtainable --- as an additional span attribute, or by joining \code{risk.limit\_id} to a reference-data ledger --- and executing the verification query is what reveals whether it is. An empty result, or a result lacking the version key, marks the scenario unanswerable and contributes zero for this step to the answerability component of \S4.5. This is the distinction between completeness (the declared attributes are present) and answerability (the declared question can be answered), and it is the kind of gap that per-component coverage does not notice.
 
+\textbf{Attribute classes.} Each \code{required\_attributes[]} entry may be a name (the form used by version 1.0 and by version 2.0.0 of the example) or an object \code{\{name, class\}} with \code{class: identifier | digest | content}. An \code{identifier} attribute carries an identifier, enumeration value or short code that names a thing (a flow id, a step id, a limit id, a decision); a \code{digest} attribute carries a cryptographic digest of a value, which commits to the value without disclosing it (the \code{dec.*} attributes of \S4.7 are of this class); a \code{content} attribute carries the value itself (free text, a payload, a document, a rendered prompt). The class is declared by the flow author: it says what kind of value the attribute carries and, through the rule below, on which stream it may be recorded. In the version 2.1.0 example (\S4.1) each of \code{s4}'s four required attributes is declared \code{class: identifier}. On a flow that declares an \code{assurance\_sampling\_floor}, every \code{required\_attributes[]} entry carries an explicit \code{class} --- the class is declared, never inferred --- and a name-only entry is a finding of the companion \code{flow.spec} validator (its rule R15, which also requires \code{assurance\_sampling\_floor} to lie between \code{sampling\_floor} and \code{1.0}); R15 does not forbid \code{content} attributes on any flow. On a flow that declares no assurance stream a name-only entry declares no class and stream placement is moot; a realization then treats the entry as \code{identifier} for the rule below and reports that it did so, and does the same, with the same report, for a descriptor that reached it without validation.
+
+\textbf{The assurance stream.} A flow's telemetry is divided into two streams. The \emph{sampled stream} is the whole of the flow's telemetry --- every span, interior spans included, with every attribute --- retained at \code{telemetry.sampling\_floor}. The \textbf{assurance stream} is the part that coverage (\S4.5) and conformance (\S4.8) are computed from: the boundary spans of declared steps carrying the \code{flow.*} namespace and the \code{dec.*} digests of \S4.7, the required attributes declared \code{identifier} or \code{digest}, and the required metrics; it is retained at \code{telemetry.assurance\_sampling\_floor}, which defaults to \code{sampling\_floor} and is set to \code{1.0} to declare the stream unsampled. The rule is that attributes on the assurance stream are of class \code{identifier} or \code{digest}; an attribute of class \code{content} is never carried on the assurance stream, so that a flow may be retained in full for assurance without retaining payloads, free text or secrets. A required attribute of class \code{content} is therefore evaluated on the sampled stream: completeness for that attribute, and the answerability of any scenario that needs it, are computed over the sampled runs, while every other completeness item and the conformance readings are computed over the assurance stream. \code{assurance\_sampling\_floor} is never lower than \code{sampling\_floor} (the assurance stream is not sampled more aggressively than the stream it is drawn from; the companion validator's R15 requires it to lie in \code{[sampling\_floor, 1.0]}), and where a flow declares an assurance stream the tier's sampling parameter (\S4.2) is satisfied by the assurance stream, so that a P0 flow may be assured at one hundred percent while its sampled stream is retained at the flow's declared floor. A flow that declares no \code{assurance\_sampling\_floor} has a single stream, exactly as in version 1.0 and 1.1; the two-stream reading is an additional disclosed embodiment. The attribute class and the assurance stream say what kind of value an attribute carries and where it is recorded; they say nothing about whether the value is correct, and nothing about whether the flow's telemetry is sufficient --- that remains what coverage measures.
+
 \subsection{Multi-Dimensional Coverage Scoring}
 A per-flow coverage score is computed as a weighted combination of components. In one embodiment:
 
@@ -462,6 +545,16 @@ The overall score is compared against the flow's tier threshold (for example, P0
 
 \textbf{Minimal completeness check.} The binary check that every declared step has attributable telemetry --- spans grouped by (\code{flow.id}, \code{flow.step}) over the window, compared against the declared step set --- is the \textbf{minimal completeness check}. It is what the coverage constraint of the companion Polymorphic Diagram paper (\S4.2 of that paper) evaluates; it is a necessary condition for, and a degenerate case of, the telemetry-completeness component above; and the full multi-dimensional score is this section. In this disclosure ``coverage'' means the full score.
 
+\textbf{Computation over the assurance stream.} Where a flow declares an assurance stream (\S4.4), the sampled traces and sampled runs over which the components above are computed are the runs of the assurance stream, except for required attributes of class \code{content} and the scenarios that need them, which are evaluated over the sampled stream as \S4.4 states; the effective sampling rate reported with the score is then the assurance stream's. Where a flow declares no assurance stream the computation is unchanged.
+
+\textbf{Two-sided indicators: degradation rate and veto rate.} A flow that declares degradation paths and outcomes (\S4.1, \S4.8) has two service-level indicators that a coverage engine reports beside the score. The \textbf{degradation rate} is the fraction of runs in the window that took any declared \code{on\_fail} edge; the \textbf{veto rate} is the fraction of runs whose outcome was \code{block}. Each carries a \emph{declared band}, a lower and an upper bound: a rate above the band is a quality signal (the primary path is failing, or a gate is over-blocking), and a rate below it is a gate that has stopped working (a limits check that never blocks, or a degradation path that is never taken --- as much a finding as one taken too often). Both indicators are derivable from the \code{flow.*} and \code{dec.*} attributes of \S4.7 with no new telemetry: the run is joined through \code{dec.run\_cert\_digest} to its run certificate, whose manifest records the run's \code{outcome}, its \code{termination} and, per step, whether the step was reached \code{via: primary} or \code{via: on\_fail}. Where no run certificate exists a realization may approximate both rates from the boundary-span sequence of the assurance stream --- a transition that is a declared \code{on\_fail} edge and not a \code{next} edge, or a run that ends at a step whose \code{on\_fail} names an outcome and has no successor span --- and reports the rate as approximate; where a degradation path and the primary path share a target, as \code{s5}'s do in the example (both lead to \code{s6}), spans alone cannot tell them apart and the manifest's \code{via} is the only source. The band is declared in the flow specification where the schema carries it, or in the coverage engine's configuration per flow; a rate outside its band is a finding against the flow and may, where the band is configured as a gate, fail the flow in the same way as a coverage threshold (\S4.6). For the example flow the degradation rate counts runs that took \code{s3 \(\rightarrow\) review}, \code{s4 \(\rightarrow\) block} or \code{s5 \(\rightarrow\) s6 (latched)}, and the veto rate counts the runs that \code{s4} ended in \code{block}. The two indicators measure how often the flow degraded and how often it was vetoed; they say nothing about whether any particular degradation or veto was right, which is a question for the method behind the gate and not for its telemetry.
+
+Because only a step whose output is replayable or set-bounded (ND0/ND1) may be the source of an \code{on\_fail} edge whose target is \code{block} --- binding B12 of the companion publications, a validator rule on declared flows and not a runtime mechanism --- the veto rate measures deterministic gates. A generative step may end a run in \code{review} or \code{clarify}, or inform a deterministic gate that blocks; what it may not do is be the sole source of \code{block}. In the example the one block-gate is \code{s4}, which is ND0.
+
+\textbf{Authorization coverage for effect steps.} The execution-evidence component above is extended, for steps declared \code{effect: true} (\S4.1), to count authorization evidence. For each effect step and each sampled run, the step's boundary span carries a \code{dec.authz\_cert\_digest} (\S4.7) that \emph{verifies} if the digest resolves to an authorization evidence artifact of the companion publication --- a policy-decision record signed by a policy authority whose key is in the trust bundle --- whose subject binds to the span's \code{flow.id}, \code{flow.version}, \code{flow.step} and run, that the companion verifier accepts (issued before the step; within the decision's validity window and the flow's \code{max\_decision\_age\_s} freshness window; and, where the record cites a human approval as an input, with the verifier's checks on that approval passing), and whose decision is \code{allow}. The population of the component becomes the ND0/ND1 steps (certificates, binding B7) together with the effect steps (authorization evidence), each step-run instance counted once per population it belongs to, and the score is the verified instances over the population instances, exactly as for certificates; a realization reports the two populations separately as well. A span whose authorization evidence verifies but records \code{decision: deny} (including \code{reason: policy-unavailable}, a recorded fail-closed decision) is evidence that the step ran without an allow: it counts as not covered and is reported under \S4.8. A realization may additionally count the completion evidence digest (\code{dec.completion\_cert\_digest}) and the approval digest (\code{dec.approval\_digest}), or weight them, as alternative embodiments (\S5). In the example the effect step is \code{s6}, so authorization coverage for \code{quote-issue} is the fraction of runs in which \code{s6}'s span carries a verifying \code{dec.authz\_cert\_digest}. Authorization evidence records that a policy decision was obtained before the action, what it was, under which policy version and as of when; it does not record how the decision was made, and this specification does not describe making it. Authorization coverage, accordingly, measures whether the record exists and verifies; it does not measure whether the decision was right.
+
+\textbf{Hosted set-bounded methods.} An ND1 step whose method is hosted (\code{method.kind: hosted} in the companion schema, with \code{method.digest} the digest of the method's configuration record) carries a certificate whose evidence is configuration provenance rather than replay; it is in the ND0/ND1 population of the execution-evidence component and counts as verified on the same conditions as any other certificate (signature, trust bundle, flow binding), and a coverage engine never attempts replay for it. A hosted set-bounded output is attested by configuration provenance; it is not replayable and its certificate says so.
+
 \subsection{CI/CD Enforcement and Visualization}
 Coverage is computed automatically in continuous integration. A change that reduces a flow's coverage below its tier threshold is blocked; coverage deltas are reported in code review; coverage trends are tracked over time. A topology visualization overlays flow paths on the service graph, coloring segments by SLO status and enabling drill-down into segment performance and missing telemetry. The topology overlay described here is realized in the companion work as the flow lens of a polymorphic diagram; coverage and answerability shading are rendered on the declared topology.
 
@@ -476,7 +569,7 @@ The attribute namespace, expressed as an OpenTelemetry semantic-convention exten
 
 \begin{center}
 \footnotesize
-\begin{tabular}{@{}p{3.6cm} l l p{3.4cm} p{5.0cm}@{}}
+\begin{tabular}{@{}p{4.4cm} l l p{3.4cm} p{4.2cm}@{}}
 \toprule
 \textbf{Attribute} & \textbf{Type} & \textbf{Required} & \textbf{Set by} & \textbf{Meaning} \\
 \midrule
@@ -493,12 +586,15 @@ The attribute namespace, expressed as an OpenTelemetry semantic-convention exten
 
 \begin{center}
 \footnotesize
-\begin{tabular}{@{}p{3.6cm} l l p{3.4cm} p{5.0cm}@{}}
+\begin{tabular}{@{}p{4.4cm} l l p{3.4cm} p{4.2cm}@{}}
 \toprule
 \textbf{Attribute} & \textbf{Type} & \textbf{Required} & \textbf{Set by} & \textbf{Meaning} \\
 \midrule
 \code{dec.step\_cert\_digest} & string & optional & hosting component, after issuance & sha256 digest of the DEC step certificate for this span's step \\
 \code{dec.run\_cert\_digest} & string & optional & entry component, at run end & digest of the run certificate \\
+\code{dec.authz\_cert\_digest} & string & optional & hosting component of an effect step, before execution & digest of the authorization evidence (policy-decision record) for this span's effect step \\
+\code{dec.completion\_cert\_digest} & string & optional & hosting component of an effect step, after completion & digest of the completion evidence for this span's effect step \\
+\code{dec.approval\_digest} & string & optional & hosting component of an effect step, when present & digest of the \code{human\_approval} attestation referenced by the authorization evidence \\
 \code{flow.segment.id} (deprecated) & string & deprecated & --- & FTC v1.0 name for the step identifier. Accept on ingest as an alias of \code{flow.step} for one major version; never emit. \\
 \code{flow.priority} (deprecated) & string & deprecated & --- & FTC v1.0 name for \code{flow.criticality}. Same treatment. \\
 \bottomrule
@@ -507,12 +603,17 @@ The attribute namespace, expressed as an OpenTelemetry semantic-convention exten
 
 Propagation: \code{flow.id}, \code{flow.version}, \code{flow.step} travel as baggage and are recorded on every span; interior spans inherit; only declared step boundaries update \code{flow.step}. Metrics carry the same keys as exemplar labels; cost/usage ledger records carry them as columns.
 
+\begin{sloppypar}
+The three \code{dec.*} attributes added in the revision of 2026-10-11 (\code{dec.authz\_cert\_digest}, \code{dec.completion\_cert\_digest}, \code{dec.approval\_digest}) make an effect step's span joinable to the evidence issued before and after it; all three are of attribute class \code{digest} (\S4.4) and so belong on the assurance stream. The retention floor of the assurance stream is the descriptor field \code{spec.telemetry.assurance\_sampling\_floor} (\S4.4; \code{1.0} in the version 2.1.0 example), not a span attribute; a realization records the assurance stream's effective sampling rate with each coverage report, beside the sampled stream's.
+\end{sloppypar}
+
 \textbf{Identity bindings.} The following bindings are normative for any realization of this method that interoperates with the companion publications (the binding numbers are those used across the three companion publications):
 
 \begin{itemize}
 \item \textbf{B2 (flow \(\leftrightarrow\) telemetry).} Every span of a run MUST carry \code{flow.id}, \code{flow.version} and \code{flow.step} as set out in the table above.
 \item \textbf{B3 (run \(\leftrightarrow\) trace).} \code{run\_id} MUST equal the trace id of the trigger span unless \code{flow.run\_id} is set, in which case both MUST be recorded on the trigger span.
 \item \textbf{B7 (coverage \(\leftrightarrow\) evidence).} Coverage MAY include execution-evidence coverage: the fraction of ND0/ND1 steps in a window whose spans carry a verifiable \code{dec.step\_cert\_digest} (\S4.5). A realization that reports this component MUST compute it from digests that verify against the issuer's trust bundle and whose certificate's \code{subject.flow = \{id, version, step\}} matches the span's \code{flow.id}, \code{flow.version} and \code{flow.step}.
+\item \textbf{B7, extended to effect steps (2026-10-11).} Execution-evidence coverage MAY additionally count, for steps declared \code{effect: true}, the fraction of sampled runs in which the step's span carries a \code{dec.authz\_cert\_digest} that verifies as \S4.5 states (a policy-decision record signed by a policy authority in the trust bundle, bound to the span's flow, step and run, issued before the step, with decision \code{allow}). A realization that reports authorization coverage MUST compute it under those conditions and MUST report it separately from certificate coverage as well as pooled with it.
 \end{itemize}
 
 \subsection{Conformance and the Authorized Plan}
@@ -521,6 +622,14 @@ Observed trace topology is compared against the declared flows in both direction
 \textbf{The authorized-plan reading.} For flows executed by autonomous agents, whose step sequence is chosen at runtime, the declared flow is read as the \textbf{authorized plan}: the set of steps, with their \code{next} relations and bounds, that a run is permitted to take. The comparison is then made per run rather than per window. The run's realized step DAG --- as observed from its spans grouped by \code{flow.step}, or, where the run carries a run certificate, as recorded in that certificate's \code{manifest.steps[]} --- is compared with the declared step graph. Binding B6 of the companion publications is normative here: where a run certificate exists, its \code{manifest.steps[]} is the realized step DAG and MUST be the input to the per-run comparison; a run whose realized DAG matches the declared flow is convergent, and extra steps are divergent (off-plan). A run whose realized DAG is a path through the declared graph is \textbf{convergent}. A step in the realized DAG that is not in the declared graph, or a transition not permitted by \code{next}, is an \textbf{off-plan execution}: a divergent finding attributed to the run, routed to \emph{declare} (the plan was incomplete), \emph{exempt} (an instrumentation or infrastructure step), or \emph{investigate} (the agent took a step it was not authorized to take). A declared step that the plan required and the realized DAG lacks is an \textbf{absent} finding for that run.
 
 \textbf{Bounded iteration.} A step declared with \code{kind: loop} carries \code{bound: \{max: N, on\_exceed: fail | flag\}} with \(N \geq 1\). A run that iterates the step more than \(N\) times is handled per the declared \code{on\_exceed}. With \code{fail} (the \emph{hard cap}) the run is terminated at iteration \(N+1\) and recorded as failed, so that the bound is enforced by the executing system and is an invariant of the system's behavior. With \code{flag} (the \emph{soft cap}) the run is permitted to continue and the exceedance is recorded as a divergent finding against the run, so that the bound is enforced by governance and produces evidence without interrupting a run in flight. Both variants are disclosed; the flow author chooses per step.
+
+\textbf{Convergent degradation.} A flow may declare, per step, a degradation path \code{on\_fail: \{to: \textless{}step-id\textgreater{} | outcome: \textless{}name\textgreater{}, latch?: bool\}} and, at flow level, its terminal \code{outcomes} (\S4.1). The authorized-plan reading then admits the declared \code{on\_fail} edges as part of the plan: a run whose realized path uses only declared edges --- \code{next} edges and \code{on\_fail} edges alike --- is \textbf{convergent}, and a run that took a degradation path did what was declared rather than going off-plan. Three readings are divergent: a run that re-enters the primary path after taking a degradation path marked \code{latch: true} (in the example, a run that delivered without the rendered document and then rendered); a run whose outcome is not among the flow's declared \code{outcomes}; and, as before, a transition that is neither a \code{next} edge nor a declared \code{on\_fail} edge. The run's \textbf{termination} --- \code{completed | failed | cancelled | expired}, a lifecycle state distinct from its business outcome --- is read beside the outcome: a cancelled or expired run is convergent when its termination is recorded in the manifest (and, where the run spawned child runs, when the cancellation reached them as the paragraph on cancellation below states). The inputs are those of the authorized-plan reading above: where the run carries a run certificate, its manifest records \code{outcome}, \code{termination} and, per step, \code{via: primary | on\_fail}, and the companion publications' binding B9 (every \code{on\_fail} target in the manifest is a declared \code{on\_fail} edge of the flow at the recorded \code{flow.version}; \code{manifest.outcome} is in the declared \code{outcomes}) is the rule this reading applies; where it does not, the boundary-span sequence is read with the limits \S4.5 states for shared targets. A \code{loop} step's \code{bound.on\_exceed} may name a step or an outcome in the same form, in which case the exceedance is read as a taken degradation path rather than as a divergent finding or a failed run. Conformance says the realized path was declared; it says nothing about whether degrading was right. Nor does it say anything about undoing: compensation (reversing a side effect after a later failure) is not declarable in the flow specification, and a run that would need it produces findings a person must read; that is a limitation of this disclosure as of this revision, stated rather than papered over.
+
+\textbf{Attempts of an effect step.} A step declared \code{effect: true} may declare \code{attempts: \{max, on\_exceed\}} (\S4.1). Each attempt executes the same declared step under the same idempotency key, with an incrementing attempt counter, and each attempt may have its own step certificate and completion evidence; conformance \textbf{collapses the attempts into the one declared step}, so that a retried effect step is neither a repeated step (divergent under the rule above) nor a loop iteration (which iterates a declared sub-path), and a step that exceeds \code{attempts.max} follows its \code{on\_exceed} in the form of the preceding paragraph (\code{\{outcome: error\}} in the example). The companion publications' binding B17 is read here as a conformance rule: an attempt beyond the first is preceded by completion evidence for the previous attempt whose status is \code{failed} or \code{reconciled}, and a retry after a completion recorded as \code{unknown} (a timeout or a lost response, which is not evidence that the write failed) with no \code{reconciled} completion in between is the divergent finding \code{retry-without-reconciliation}. The inputs are the certificates and completion evidence of the run, reached through the \code{dec.*} digests of \S4.7; from spans alone a realization collapses repeated boundary spans of an effect step into the declared step up to \code{attempts.max} and reports the reconciliation rule as unchecked. The practice of retrying a side-effecting request under an idempotency key is established in service APIs (Leach 2017); what is disclosed here is reading the attempts against the declared flow. Completion evidence records what the step reported and, when reconciled, what the external system reported; it does not prove the external effect occurred --- only the external system can.
+
+\textbf{Effect steps without authorization evidence.} An effect step whose evidence chain holds no authorization evidence preceding its step certificate (the companion publications' binding B10 fixes the order: authorization, then the step certificate, then completion), or whose authorization evidence records \code{decision: deny}, executed without an authorization: the reading is divergent, with the companion publications' name for the finding, \code{effect-without-authorization}, attributed to the run. The inputs are the run's evidence artifacts, reached through the \code{dec.*} digests of \S4.7; from spans alone a boundary span without a \code{dec.authz\_cert\_digest} is counted as not covered (\S4.5) and the rule is reported as unchecked. The finding records that the step ran; nothing in this disclosure prevented it. The companion's issuing authority withholds a \emph{certificate} from such a step, never the step itself, and this disclosure likewise reads the evidence after the fact --- a step that ran without authorization evidence is recorded as divergent, not prevented.
+
+\textbf{Cancellation across runs.} A step may spawn child runs, each executing under its own task grant, and the parent's manifest records each child by \code{\{run\_id, task\_grant\_commitment\}}. The companion publications' binding B14 is normative here: a run with \code{termination: cancelled} whose steps spawned child runs is convergent only if every child run's manifest has \code{termination \(\in\) \{cancelled, completed\}} with \code{issued\_at} not later than the parent's cancellation plus the flow's declared \code{cancel\_propagation\_s}; otherwise the finding is \code{cancellation-not-propagated}, divergent, attributed to the parent run and naming the child. This is the one conformance reading that is evaluated across runs rather than within one: its inputs are the run certificates of the parent and of every child, so a realization is given the set of runs to read (a directory of run certificates, or the window's certificates) and reports the rule as unchecked for a cancelled parent whose children's certificates it does not hold. In the example \code{cancel\_propagation\_s} is 30 seconds. The reading checks timing and termination only: whether a child's grant was within its parent's scope is checked by the grant issuer, not by conformance, which sees only the grant's digest. The discipline that a parent's cancellation must reach its children is the one structured concurrency makes a language rule (Smith 2018); here it is a declared window and an after-the-fact reading of evidence. Conformance says the cancellation reached the children within the declared window; it says nothing about whether cancelling was right, and nothing about what the children had already done.
 
 \textbf{Evaluation.} Conformance is evaluated after the fact: continuously over windows for the topology reading, and per run for the authorized-plan reading. Pre-execution plan verification is outside this disclosure. Findings are recorded with the version of the flow set they were evaluated against. Conformance findings may feed back into coverage: a flow with unresolved divergent findings may be scored as if its completeness were reduced, and a tier threshold may require zero unresolved off-plan findings for P0 flows.
 
@@ -544,6 +653,12 @@ The following variations are expressly disclosed so that they, too, constitute p
 \item Verification queries expressed in any query dialect with a declared result-shape contract; evaluators that execute queries against live stores, recorded traces, synthetic data, or by replay.
 \item Conformance evaluated against declared flows read as authorized plans, with hard or soft bounds on iterative steps, applied to autonomous-agent executions.
 \item Bounded iteration (\code{loop}) and choice steps declared with explicit bounds and branch sets.
+\item Dividing a flow's telemetry into an assurance stream, retained at its own (possibly unsampled) floor and carrying only attributes of class identifier or digest, and a sampled stream carrying content, with coverage and conformance computed over the assurance stream; attribute classes declared per attribute, inferred from the attribute namespace, or assigned by a pipeline policy; the two streams realized as separate exporters, separate samplers on one exporter, or attribute filtering at ingest.
+\item Two-sided service-level indicators over a flow's degradation rate and veto rate, each bounded by a declared band whose breach in either direction is a finding; bands declared in the flow specification, in an engine's configuration, or derived from the flow's history; the rates computed from run certificates, from span sequences, or from both; the indicators reported beside the coverage score, treated as detectability targets, or used as gate conditions.
+\item Execution-evidence coverage extended to steps with external side effects by counting authorization evidence, completion evidence, or human-approval attestations referenced from the step's span by digest, pooled with or reported apart from certificate coverage.
+\item Conformance that collapses repeated attempts of a declared side-effecting step under one idempotency key into the declared step, with a per-step attempt bound and declared exceedance handling, and that reads a retry without prior reconciliation as a finding; attempts identified from evidence artifacts, from span attributes, or from repeated boundary spans.
+\item Conformance evaluated across runs, in which a cancelled or expired parent run is convergent only when its child runs terminated within a declared propagation window; child runs identified from run-certificate manifests, from trace links, or from a declared parent identifier.
+\item Conformance that reads declared degradation paths, latches, outcomes and termination states as part of the authorized plan, so that a declared degradation is convergent and re-entry after a latch, an undeclared outcome, or an unrecorded termination is divergent.
 \end{itemize}
 
 \section{Enumerated Disclosed Aspects}
@@ -563,6 +678,10 @@ For clarity of the disclosed scope (these are \emph{not} patent claims; they are
 \item The method of (1), wherein the coverage measure includes an execution-evidence component computed from signed per-step execution certificates, from unsigned provenance records, or from replay success rates, the evidence being bound to a step by a certificate digest carried as a telemetry attribute on the step's span.
 \item The method of (4), wherein each verification query is declared with a query dialect and an expected result-shape contract, and answerability is evaluated by any evaluator that executes the query against live stores, recorded traces, or synthetic data, or by replay, and checks the result against the declared shape.
 \item The method of (1), further comprising comparing observed trace topology, or a run's realized step graph as recorded in a signed run certificate, against the declared flow in both directions (declared-but-unobserved; observed-but-undeclared), reading the declared flow as the authorized plan for executions by autonomous agents, and treating an observed-but-undeclared step, or an iterative step exceeding its declared bound, as an off-plan finding routed to declare, exempt, or investigate, or as a failed run, according to a hard or soft bound declared per step.
+\item The method of (1), wherein each required telemetry attribute carries a declared class of identifier, digest, or content; wherein the flow's telemetry is divided into an assurance stream, retained at a declared floor that may be unsampled and carrying only attributes of class identifier or digest, and a sampled stream carrying content; wherein the coverage measure and the conformance comparison of (13) are computed over the assurance stream; and wherein the execution-evidence component of (11) further includes, for steps declared as having an external side effect, the fraction of sampled runs in which the step's span carries a verifying digest of authorization evidence issued before the step.
+\item The method of (1), wherein the flow declares per-step degradation paths and terminal outcomes, and further comprising reporting two service-level indicators for the flow --- the fraction of runs that took any declared degradation path, and the fraction of runs whose outcome was a block --- each against a declared band such that a rate above the band or below the band is a finding, the indicators being computed from flow and evidence attributes carried on spans and from run-certificate manifests without additional telemetry.
+\item The method of (13), wherein a step declared as having an external side effect is executed as one or more attempts under one idempotency key with a declared attempt bound, and the conformance comparison collapses the attempts into the one declared step, applies the declared exceedance handling beyond the bound, and reads a retry that follows an ambiguous completion without an intervening reconciliation as a divergent finding.
+\item The method of (13), wherein the conformance comparison is evaluated across runs, such that a run recorded as cancelled or expired whose steps spawned child runs is convergent only when every child run is recorded as cancelled or completed within a propagation window declared on the flow, and otherwise yields a finding attributed to the parent run.
 \end{enumerate}
 
 \section{Industrial Applicability}
@@ -572,6 +691,9 @@ The disclosed methods apply to any distributed or service-oriented software syst
 \begin{itemize}
 \item \textbf{v1.0 (2026-07-17):} initial disclosure.
 \item \textbf{v1.1 (2026-10-10):} terminology reconciled with companion publications (Terminology section); step-primary modeling disclosed (\S3 item 1, \S4.1); nondeterminism factor (\S4.3 step 4b); cold-start allocation made explicit (\S4.3); execution-evidence coverage (\S4.5, \S4.7 binding B7); conformance and authorized-plan reading (\S3 items 8--9, \S4.8); dialect-contract verification queries (\S4.4); bounded iteration (\S4.1, \S4.8); attribute namespace renamed with aliases and identity bindings B2, B3, B6 and B7 (\S4.7, \S4.8); \code{quote-issue} worked example (\S4.1, \S4.3, \S4.4); alternative embodiments appended (\S5); aspects 9--13 added (\S6); agentic systems added to industrial applicability (\S7); references added. No disclosure withdrawn.
+\begin{itemize}
+\item \textbf{2026-10-11:} control-plane mechanics folded into version 1.1 (no version bump): degradation paths, outcomes, termination and the two-sided degradation/veto indicators (\S4.1, \S4.5, \S4.8; Terminology rows outcome, degradation path, latch, termination); effect steps without authorization evidence read as divergent (\S4.8); cancellation propagation across parent and child runs, binding B14 (\S4.8; Terminology row task grant); attempts of an effect step collapsed in conformance, reconciliation before retry (\S4.1, \S4.8; Terminology rows effect step, attempt, completion evidence); hosted set-bounded methods in execution-evidence coverage (\S4.5); gate authority cited with its reconciling sentence (\S4.5; Terminology row gate); attribute classes, the assurance stream, \code{assurance\_sampling\_floor}, the three \code{dec.*} attributes, authorization coverage for effect steps and the B7 extension (\S4.1, \S4.4, \S4.5, \S4.7; Terminology rows authorization evidence, assurance stream); running example re-spliced at version 2.1.0 (\S4.1); alternative embodiments appended (\S5); aspects 14--17 added (\S6); two references added. Claims manifests, human-approval attestations and erasure are disclosed by the companion publications and have no edits in this disclosure. No disclosure withdrawn.
+\end{itemize}
 \end{itemize}
 
 \section*{Acknowledgment}
@@ -583,8 +705,10 @@ Drafting and specification development were assisted by Claude (Anthropic); all 
 \item Gray, J. (2026a). Flow-Based Telemetry Coverage: A Method for Measuring and Governing Observability by Business-Flow Consequence. Version 1.0. Zenodo. Concept DOI \url{https://doi.org/10.5281/zenodo.21415947}; version DOI \url{https://doi.org/10.5281/zenodo.21415948}.
 \item Gray, J. (2026b). The Polymorphic Diagram: Binding Declared Business Flows to Runtime Telemetry in Governed Architecture-as-Code. Preprint, v1.1. Zenodo. Concept DOI \url{https://doi.org/10.5281/zenodo.21524592}; version DOI \url{https://doi.org/10.5281/zenodo.21524593}. Specification and reference tooling: \url{https://github.com/azimuth-ink/polydiagram} (concept DOI \url{https://doi.org/10.5281/zenodo.21524083}).
 \item Gray, J. (2026c). Deterministic Execution Certificates: Verifiable Evidence for Hybrid LLM-Agent Workflows. Preprint, v0.1, deposited as a defensive publication. Zenodo. DOI \url{https://doi.org/10.5281/zenodo.21525232}. Specification and reference verifier: \url{https://github.com/azimuth-ink/agent-dec} (concept DOI \url{https://doi.org/10.5281/zenodo.21524087}).
+\item Leach, B. (2017). Designing robust and predictable APIs with idempotency. Stripe engineering blog. \url{https://stripe.com/blog/idempotency}
 \item Murphy, G.\,C., Notkin, D., Sullivan, K.\,J. (2001). Software Reflexion Models: Bridging the Gap Between Design and Implementation. \emph{IEEE Transactions on Software Engineering}, 27(4).
 \item OpenTelemetry Authors. \emph{OpenTelemetry Specification and Semantic Conventions.} opentelemetry.io.
+\item Smith, N.\,J. (2018). Notes on structured concurrency, or: Go statement considered harmful. \url{https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/}
 \end{itemize}
 \end{sloppypar}
 
