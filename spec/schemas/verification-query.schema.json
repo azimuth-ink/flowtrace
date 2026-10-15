@@ -50,7 +50,8 @@
         "index": { "type": "integer", "minimum": 0, "description": "position in debug_scenarios[] (alternative to scenario)" },
         "dialect": { "$ref": "#/$defs/dialect" },
         "text": { "type": "string", "minLength": 1 },
-        "expected_shape": { "$ref": "#/$defs/expectedShape" }
+        "expected_shape": { "$ref": "#/$defs/expectedShape" },
+        "stream": { "enum": ["assurance", "sampled"], "description": "Revision 2026-10-11 (FTC §4.4; spec §4.1): the stream the query reads. A scenario that needs a required attribute of class content reads the sampled stream; everything else the assurance stream. When absent the engine decides from the scenario's required_data (free text, so a heuristic); declaring it here is the contract." }
       }
     },
     "bindingFile": {

@@ -4,7 +4,8 @@
 can grow a `--adapter` flag without touching the engine."""
 from __future__ import annotations
 
-from .base import Adapter, LogRow, MetricRow, QueryError, QueryResult, SpanRow, UnsupportedDialect, Window
+from .base import (CANONICAL_ATTRIBUTES, EFFECT_STEP_ATTRIBUTES, Adapter, LogRow, MetricRow, QueryError, QueryResult, SpanRow,
+                   UnsupportedDialect, Window)
 
 REGISTRY = {
     "otlp_duckdb": "flowtrace.adapters.otlp_duckdb:OtlpDuckDBAdapter",
@@ -21,5 +22,5 @@ def load_adapter(name: str, paths, **kwargs) -> Adapter:
     return getattr(importlib.import_module(mod), cls)(paths, **kwargs)
 
 
-__all__ = ["Adapter", "LogRow", "MetricRow", "QueryError", "QueryResult", "SpanRow", "UnsupportedDialect",
-           "Window", "REGISTRY", "load_adapter"]
+__all__ = ["Adapter", "CANONICAL_ATTRIBUTES", "EFFECT_STEP_ATTRIBUTES", "LogRow", "MetricRow", "QueryError", "QueryResult",
+           "SpanRow", "UnsupportedDialect", "Window", "REGISTRY", "load_adapter"]

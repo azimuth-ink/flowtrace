@@ -34,14 +34,58 @@ import pathlib
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Sequence
 
-from .adapters.base import Adapter, LogRow, MetricRow, SpanRow, Window
+from .adapters.base import CANONICAL_ATTRIBUTES, Adapter, LogRow, MetricRow, SpanRow, Window
 from .config import REPLAYABLE_ND_CLASSES
-from .flows import Flow, required_log_specs, required_metric_specs, required_trace_specs
+from .flows import (ATTRIBUTE_CLASSES, Flow, attribute_entries, required_log_specs, required_metric_specs,
+                    required_trace_specs)
 from .decompose import sync_frontier
 
 B2_ATTRIBUTES = ("flow.id", "flow.version", "flow.step")
 KNOWN_SLO_KEYS = ("latency_p95_ms", "latency_p99_ms", "error_rate_percent", "availability")
 FLOW_SLO_KEYS = ("latency_p95_ms", "async_completion_p99_s", "availability")
+DEFAULT_NAMESPACE_CLASSES = {"flow.*": "identifier", "dec.*": "digest"}
+
+
+# =============================================================== attribute classes (FTC §4.4; spec §4.1)
+def resolve_attribute_class(name: str, declared: str | None, namespace_defaults: Mapping[str, str] | None = None) -> tuple[str, str]:
+    """-> (class, source) with source in declared | namespace | assumed. A
+    declared class is taken as declared (the class is declared, never
+    inferred, on a flow with an assurance stream — validator R15). A
+    name-only entry resolves through the canonical namespace table (FTC
+    §4.7: `flow.*` identifiers, `dec.*` digests) and the configured
+    `attribute_classes.namespace_defaults`, else to `identifier`, recorded
+    as assumed."""
+    if declared in ATTRIBUTE_CLASSES:
+        return declared, "declared"
+    if name in CANONICAL_ATTRIBUTES:
+        return CANONICAL_ATTRIBUTES[name], "namespace"
+    for pattern, klass in (namespace_defaults if namespace_defaults is not None else DEFAULT_NAMESPACE_CLASSES).items():
+        prefix = pattern[:-1] if pattern.endswith("*") else pattern
+        if (name.startswith(prefix) if pattern.endswith("*") else name == prefix) and klass in ATTRIBUTE_CLASSES:
+            return klass, "namespace"
+    return "identifier", "assumed"
+
+
+def classified_attributes(flow: Flow, namespace_defaults: Mapping[str, str] | None = None) -> dict[str, list[dict]]:
+    """Per step: every required attribute of every trace spec with its
+    resolved class, whether it was assumed, and the stream it is read from
+    (`content` -> sampled; everything else -> assurance)."""
+    out: dict[str, list[dict]] = {}
+    for s in flow.steps:
+        rows = []
+        for spec in required_trace_specs(s):
+            for e in attribute_entries(spec):
+                klass, source = resolve_attribute_class(e["name"], e["class"], namespace_defaults)
+                rows.append({"span_name": spec.get("span_name"), "name": e["name"], "class": klass,
+                             "class_assumed": source == "assumed", "class_source": source,
+                             "stream": "sampled" if klass == "content" else "assurance"})
+        out[s["id"]] = rows
+    return out
+
+
+def content_attributes(flow: Flow, namespace_defaults: Mapping[str, str] | None = None) -> dict[str, set[str]]:
+    """Per step, the names of its required attributes of class content."""
+    return {sid: {r["name"] for r in rows if r["class"] == "content"} for sid, rows in classified_attributes(flow, namespace_defaults).items()}
 
 
 # =============================================================== run indexing
@@ -105,9 +149,21 @@ def _attr_present(span: SpanRow, key: str) -> bool:
 
 
 def evaluate_completeness(flow: Flow, runs: Mapping[str, Run], metrics: Sequence[MetricRow],
-                          logs: Sequence[LogRow]) -> dict:
+                          logs: Sequence[LogRow], *, sampled_runs: Mapping[str, Run] | None = None,
+                          namespace_defaults: Mapping[str, str] | None = None,
+                          assurance_export_distinct: bool = False) -> dict:
+    """`runs` are the runs of the assurance stream (the sampled traces of FTC
+    §4.5 "computation over the assurance stream"); `sampled_runs`, when the
+    two streams are distinct exports, are the sampled stream's runs, read for
+    required attributes of class `content` and joined by trace id — a run
+    absent from the sampled stream is *not evaluated* for such an attribute,
+    not missing (spec §4.1). With one export both are the same runs."""
     steps = flow.steps
     step_ids = [s["id"] for s in steps]
+    classes = classified_attributes(flow, namespace_defaults)
+    sampled = runs if sampled_runs is None else sampled_runs
+    not_evaluated: dict[str, dict[str, int]] = {sid: {} for sid in step_ids}
+    content_on_assurance: dict[tuple[str, str], int] = {}
     # window-level: required metrics / logs per step
     window_missing: dict[str, list[str]] = {sid: [] for sid in step_ids}
     for s in steps:
@@ -148,9 +204,21 @@ def evaluate_completeness(flow: Flow, runs: Mapping[str, Run], metrics: Sequence
                     if not cands:
                         missing.append(f"required span {spec['span_name']} absent")
                         continue
-                    for key in spec.get("required_attributes") or []:
-                        if not any(_attr_present(x, key) for x in cands):
-                            missing.append(f"span {spec['span_name']} lacks required attribute {key}")
+                    for entry in [c for c in classes[sid] if c["span_name"] == spec["span_name"]]:
+                        key = entry["name"]
+                        if entry["class"] != "content":
+                            if not any(_attr_present(x, key) for x in cands):
+                                missing.append(f"span {spec['span_name']} lacks required attribute {key}")
+                            continue
+                        # a content attribute is read from the sampled stream (FTC §4.4); it must not ride the assurance stream
+                        if assurance_export_distinct and any(_attr_present(x, key) for x in cands):
+                            content_on_assurance[(sid, key)] = content_on_assurance.get((sid, key), 0) + 1
+                        srun = sampled.get(run.trace_id)
+                        scands = [x for x in (srun.by_step.get(sid, []) if srun else []) if x.name == spec["span_name"]]
+                        if srun is None or not scands:
+                            not_evaluated[sid][key] = not_evaluated[sid].get(key, 0) + 1
+                        elif not any(_attr_present(x, key) for x in scands):
+                            missing.append(f"span {spec['span_name']} lacks required attribute {key} (content; sampled stream)")
             missing += window_missing[sid]
             if missing:
                 run_ok = False
@@ -165,6 +233,8 @@ def evaluate_completeness(flow: Flow, runs: Mapping[str, Run], metrics: Sequence
         d = by_step[sid]
         d["fraction"] = (d["complete_runs"] / n) if n else 0.0
         d["missing"] = dict(sorted(d["missing"].items()))
+        d["attributes"] = classes[sid]
+        d["not_evaluated"] = dict(sorted(not_evaluated[sid].items()))
     blind = [sid for sid in step_ids if by_step[sid]["present_runs"] == 0]
     return {
         "score": (runs_complete / n) if n else 0.0,
@@ -173,6 +243,8 @@ def evaluate_completeness(flow: Flow, runs: Mapping[str, Run], metrics: Sequence
         "runs_complete": runs_complete,
         "blind_spots": blind,
         "by_step": by_step,
+        "class_assumed": sorted({f"{sid}:{r['name']}" for sid, rows in classes.items() for r in rows if r["class_assumed"]}),
+        "content_on_assurance": [{"step": sid, "attribute": key, "runs": c} for (sid, key), c in sorted(content_on_assurance.items())],
         "reason": None if n else "no runs of the flow observed in the window",
     }
 
@@ -389,6 +461,7 @@ class CertificateIndex:
         self.runs_by_run_id: dict[str, dict[str, tuple[pathlib.Path, dict]]] = {}   # run_id -> {digest: (path, cert)}
         self.authorizations: dict[str, tuple[pathlib.Path, dict]] = {}
         self.completions: dict[str, tuple[pathlib.Path, dict]] = {}
+        self.approvals: dict[str, tuple[pathlib.Path, dict]] = {}        # human_approval attestations, by digest (unit H2)
         self.by_path: dict[pathlib.Path, tuple[str, dict]] = {}                         # member path -> (digest, doc)
         self.errors: list[str] = []
         self.run_binding_notes: list[str] = []
@@ -479,6 +552,106 @@ class CertificateIndex:
             return "run-binding-mismatch", f"{path.name}: subject.run_id {subj.get('run_id')} != span trace {span.trace_id} (B3/B4)"
         return "verified", None
 
+    # ---- revision 2026-10-11 (D15, spec §6.6): authorization evidence of an effect step ----
+    def _bind(self, path: pathlib.Path, doc: dict, span: SpanRow) -> tuple[str, str] | None:
+        """(status, reason) when the artifact's subject does not bind to the
+        span's flow / step / run (B3/B4/B7), else None."""
+        subj = doc.get("subject") or {}
+        fl = subj.get("flow") or {}
+        want = (span.attributes.get("flow.id"), span.attributes.get("flow.version"), span.attributes.get("flow.step"))
+        got = (fl.get("id"), fl.get("version"), fl.get("step"))
+        if got != want or subj.get("step_id") != want[2]:
+            return "flow-mismatch", f"{path.name}: subject.flow {got} != span {want} (B7)"
+        if subj.get("run_id") != span.trace_id and span.attributes.get("flow.run_id") != subj.get("run_id"):
+            return "run-binding-mismatch", f"{path.name}: subject.run_id {subj.get('run_id')} != span trace {span.trace_id} (B3/B4)"
+        return None
+
+    def _signed(self, path: pathlib.Path, doc: dict, klass: str) -> tuple[str, str] | None:
+        """(status, reason) when the artifact's signature does not verify in
+        the trust-bundle class its kind resolves in, else None."""
+        if self.resolve is None:
+            return "unverifiable", "no trust bundle supplied"
+        key, why = self.resolve(doc, klass)
+        if key is None:
+            if why and "not in trust bundle class" in why:
+                return "authority-not-trusted" if klass == "policy_authorities" else "signature-invalid", f"{path.name}: {why}"
+            return "signature-invalid", f"{path.name}: {why}"
+        if not self.vd.verify_signature(doc, key):
+            return "signature-invalid", f"{path.name}: signature invalid"
+        return None
+
+    def verify_authorization_digest(self, digest: str, span: SpanRow) -> tuple[str, str | None]:
+        """-> (status, reason) for an effect step's dec.authz_cert_digest (spec
+        §6.6): verified | artifact-not-found | signature-invalid |
+        authority-not-trusted | flow-mismatch | run-binding-mismatch | denied |
+        authorization-expired | authorization-stale | approval-invalid |
+        unverifiable. The step-1d checks (order in the chain, validity window,
+        freshness, the cited approval) are agent-dec's verifier's, read from
+        its result for the run directory; the record is not re-checked here."""
+        hit = self.authorizations.get(digest)
+        if hit is None:
+            return "artifact-not-found", f"no kind: authorization artifact with digest {digest[:19]}… under --dec-dir"
+        path, doc = hit
+        bad = self._signed(path, doc, "policy_authorities")
+        if bad:
+            return bad
+        bad = self._bind(path, doc, span)
+        if bad and bad[0] != "run-binding-mismatch":
+            return bad
+        binding = bad                                       # None, or the run-binding mismatch to report after the checks
+        decision = (doc.get("decision") or {})
+        if decision.get("decision") != "allow":
+            return "denied", (f"{path.name}: decision {decision.get('decision')}"
+                              + (f", reason {decision.get('reason')!r}" if decision.get("reason") else ""))
+        vr = self.verifier_result(self.run_directory(path))
+        if vr.error or vr.verdict == "error":
+            return "unverifiable", f"{path.name}: agent-dec's verifier could not evaluate {path.parent.name}/ ({vr.error or 'no verdict'})"
+        step_file = self._effect_certificate_for(path, doc)
+        if step_file is None:
+            return "unverifiable", f"{path.name}: no step certificate for the same step, key and attempt in {path.parent.name}/"
+        for name, reason in vr.findings_for(step_file):
+            if name == "authorization-expired":
+                return "authorization-expired", f"{step_file}: {reason}"
+            if name == "authorization-stale":
+                return "authorization-stale", f"{step_file}: {reason}"
+            if name in ("sod-violation", "approval-payload-mismatch"):
+                return "approval-invalid", f"{step_file}: {name}: {reason}"
+            if name == "effect-without-authorization":
+                return "unverifiable", f"{step_file}: the verifier does not accept this record as the step's authorization: {reason}"
+        if binding:
+            return binding
+        return "verified", None
+
+    def _effect_certificate_for(self, authz_path: pathlib.Path, authz: dict) -> str | None:
+        """The file name of the step certificate in the same run directory with
+        the authorization's step id, idempotency key commitment and attempt
+        id (the member the verifier attributes the step-1d findings to)."""
+        subj = authz.get("subject") or {}
+        ident = (subj.get("step_id"), subj.get("idempotency_key_commitment"), subj.get("attempt_id"))
+        run_dir = self.run_directory(authz_path)
+        for p, (digest, doc) in self.by_path.items():
+            if p.parent != run_dir or doc.get("kind") is not None:
+                continue
+            s = doc.get("subject") or {}
+            if (s.get("step_id"), s.get("idempotency_key_commitment"), s.get("attempt_id")) == ident:
+                return p.name
+        return None
+
+    def completion_status(self, digest: str, span: SpanRow) -> tuple[str, str | None]:
+        """-> (status, reason) for dec.completion_cert_digest: the completion's
+        `status` (completed | failed | unknown | reconciled) when the artifact
+        is found, verifies against keys[] and binds to the span; else
+        artifact-not-found | signature-invalid | flow-mismatch |
+        run-binding-mismatch | unverifiable."""
+        hit = self.completions.get(digest)
+        if hit is None:
+            return "artifact-not-found", f"no kind: completion artifact with digest {digest[:19]}… under --dec-dir"
+        path, doc = hit
+        bad = self._signed(path, doc, "keys") or self._bind(path, doc, span)
+        if bad and bad[0] != "run-binding-mismatch":
+            return bad
+        return str(doc.get("status")), (bad[1] if bad else None)
+
     def run_certificate_for(self, run: Run) -> tuple[pathlib.Path, dict] | None:
         """The run certificate bound to this run (B3/B6): found through
         dec.run_cert_digest on the trigger span, or by subject.run_id equal to
@@ -525,13 +698,14 @@ class CertificateIndex:
         return hit
 
 
-def evaluate_execution_evidence(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None,
-                                run_binding: str = "warn") -> dict:
-    population = flow.replayable_steps
-    if not population:
-        return {"score": 1.0, "applicable": False, "steps": {}, "reason": "no step declares ND0/ND1; component not applicable"}
+def _evidence_population(population: Sequence[str], runs: Mapping[str, Run], index: CertificateIndex | None,
+                         run_binding: str, attribute: str, verify, label: str) -> tuple[dict[str, dict], int, int, list[str]]:
+    """One population of the execution-evidence component (spec §6.5 / §6.6):
+    per step and run, the boundary span's digest `attribute` verified by
+    `verify(digest, span) -> (status, reason)`; run-binding mismatches count
+    as evidence under `warn` and are reported."""
     by_step: dict[str, dict] = {}
-    total, verified = 0, 0
+    total = verified = 0
     warnings: list[str] = []
     for sid in population:
         st = {"runs": 0, "verified": 0, "statuses": {}, "run_binding_mismatches": 0, "examples": []}
@@ -542,13 +716,13 @@ def evaluate_execution_evidence(flow: Flow, runs: Mapping[str, Run], index: Cert
             if not bounds:
                 status, reason = "missing-span", "step not observed in this run"
             else:
-                digest = bounds[0].attributes.get("dec.step_cert_digest")
+                digest = bounds[0].attributes.get(attribute)
                 if not digest:
-                    status, reason = "missing-digest", "boundary span carries no dec.step_cert_digest"
+                    status, reason = "missing-digest", f"boundary span carries no {attribute}"
                 elif index is None:
                     status, reason = "unverifiable", "no --dec-dir / --trust-bundle supplied"
                 else:
-                    status, reason = index.verify_step_digest(digest, bounds[0])
+                    status, reason = verify(digest, bounds[0])
                     if status == "run-binding-mismatch":
                         st["run_binding_mismatches"] += 1
                         if run_binding != "strict":
@@ -561,11 +735,79 @@ def evaluate_execution_evidence(flow: Flow, runs: Mapping[str, Run], index: Cert
                 st["examples"].append({"trace_id": run.trace_id, "status": status, "reason": reason})
         st["fraction"] = (st["verified"] / st["runs"]) if st["runs"] else 0.0
         if st["run_binding_mismatches"] and run_binding != "strict":
-            warnings.append(f"step {sid}: {st['run_binding_mismatches']} verified certificate(s) do not bind to the span's run "
+            warnings.append(f"step {sid}: {st['run_binding_mismatches']} verified {label}(s) do not bind to the span's run "
                             f"(subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is "
                             f"'{run_binding}' — set 'strict' to enforce B3/B4")
         by_step[sid] = st
-    return {"score": (verified / total) if total else 0.0, "applicable": True, "steps": by_step,
+    return by_step, total, verified, warnings
+
+
+def _completion_and_approval(sid: str, runs: Mapping[str, Run], index: CertificateIndex | None, run_binding: str) -> dict:
+    """Per effect step (spec §6.6): the completion evidence statuses and the
+    approval digests the spans carry, resolved and reported, not scored."""
+    statuses: dict[str, int] = {}
+    present = resolved = 0
+    binding_mismatches = 0
+    for run in runs.values():
+        bounds = run.boundaries.get(sid) or []
+        if not bounds:
+            statuses["missing-span"] = statuses.get("missing-span", 0) + 1
+            continue
+        span = bounds[-1]                                  # the last attempt's span carries the final completion
+        digest = span.attributes.get("dec.completion_cert_digest")
+        if not digest:
+            status = "missing-digest"
+        elif index is None:
+            status = "unverifiable"
+        else:
+            status, reason = index.completion_status(digest, span)
+            if reason and "B3/B4" in reason:
+                binding_mismatches += 1
+                if run_binding == "strict":
+                    status = "run-binding-mismatch"
+        statuses[status] = statuses.get(status, 0) + 1
+        approval = span.attributes.get("dec.approval_digest")
+        if approval:
+            present += 1
+            if index is not None and approval in index.approvals:
+                resolved += 1
+    return {"completion_status": dict(sorted(statuses.items())), "completion_run_binding_mismatches": binding_mismatches,
+            "approval_present": {"spans_with_digest": present, "resolved": resolved}}
+
+
+def evaluate_execution_evidence(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None,
+                                run_binding: str = "warn", count_completion: bool = False) -> dict:
+    """Binding B7 (spec §6.5) over the ND0/ND1 steps (`dec.step_cert_digest`
+    -> `certificate_coverage`) and, revision 2026-10-11 (spec §6.6), the
+    effect steps (`dec.authz_cert_digest` -> `authorization_coverage`); the
+    score is the pooled fraction over both populations' step-run instances.
+    With `count_completion` a third population, the effect steps' completion
+    evidence with status completed | reconciled, is pooled too."""
+    replayable, effect = flow.replayable_steps, flow.effect_steps
+    if not replayable and not effect:
+        return {"score": 1.0, "applicable": False, "steps": {}, "authorization": {},
+                "reason": "no step declares ND0/ND1 and none declares effect: true; component not applicable"}
+    verify_step = index.verify_step_digest if index is not None else None
+    verify_authz = index.verify_authorization_digest if index is not None else None
+    steps, c_total, c_verified, warnings = _evidence_population(replayable, runs, index, run_binding, "dec.step_cert_digest",
+                                                                verify_step, "certificate")
+    authz, a_total, a_verified, a_warn = _evidence_population(effect, runs, index, run_binding, "dec.authz_cert_digest",
+                                                              verify_authz, "authorization record")
+    warnings += a_warn
+    for sid in effect:
+        authz[sid].update(_completion_and_approval(sid, runs, index, run_binding))
+    total, verified = c_total + a_total, c_verified + a_verified
+    completion_coverage = None
+    if count_completion and effect:
+        ok = sum(1 for sid in effect for s, n in authz[sid]["completion_status"].items() if s in ("completed", "reconciled") for _ in range(n))
+        completion_coverage = (ok / a_total) if a_total else 0.0
+        total += a_total
+        verified += ok
+    return {"score": (verified / total) if total else 0.0, "applicable": True, "steps": steps, "authorization": authz,
+            "certificate_coverage": (c_verified / c_total) if c_total else None,
+            "authorization_coverage": (a_verified / a_total) if a_total else None,
+            "completion_coverage": completion_coverage,
+            "populations": {"certificates": replayable, "authorization": effect, "completion": effect if count_completion else []},
             "run_binding": run_binding, "warnings": warnings,
             "reason": None if index is not None else "no certificate index: every digest is unverifiable"}
 

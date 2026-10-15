@@ -68,6 +68,9 @@ scoring:
     run_binding: warn              # warn | strict — whether a verified certificate must also bind to the span's run (subject.run_id == trace id, B3/B4).
                                    # B7 (§4.7) requires trust-bundle verification and subject.flow match; run binding is the stronger check.
                                    # `strict` is recommended in production; the shipped example reuses one signed run across synthetic runs (see README).
+    count_completion: false        # §4.5 (revision 2026-10-11), spec §6.6: pool a third population — the effect steps' completion evidence with
+                                   # status completed | reconciled — beside certificates (ND0/ND1 steps) and authorization records (effect steps).
+                                   # Authorization coverage is always pooled and also reported apart; completion is reported, not scored, unless this is true.
   # Components that are not applicable to a flow (e.g. no asserted SLO target
   # at all for detectability) are dropped and the remaining weights
   # renormalized; a component the tier REQUIRES is always applicable and
@@ -105,3 +108,21 @@ telemetry:
   default_dialect: otel-sql        # a verification query with no dialect is otel-sql (prompt C3)
   accept_deprecated_aliases: true  # flow.segment.id -> flow.step ; flow.priority -> flow.criticality
   assumed_sampling_rate: 1.0       # a file export is assumed complete unless `flowtrace gate --sampling-rate` says otherwise
+  assumed_assurance_sampling_rate: null   # §4.4 (revision 2026-10-11), spec §2.4: the assurance stream's effective rate (`--assurance-sampling-rate`);
+                                          # null = the assumed sampling rate above. Checked against the effective assurance floor
+                                          # (max of the tier's floor and the flow's assurance_sampling_floor) when the flow declares one.
+
+# ---------------------------------------------------------------------------
+# FTC §4.4 (revision 2026-10-11) — attribute classes and the assurance stream
+# (spec §4.1). A required attribute's class is declared by the flow author
+# (identifier | digest | content); on a flow with an assurance stream the
+# companion validator's R15 requires every entry to declare one. Where a
+# name-only entry still reaches the engine (a flow without an assurance
+# stream; an unvalidated descriptor) the class is resolved through the
+# canonical namespace table (flow.* identifiers, dec.* digests; FTC §4.7),
+# then these namespace defaults, else assumed `identifier` and reported.
+attribute_classes:
+  warn_on_assumed: true            # the warn-class finding attribute-class-assumed, once per flow with an assumed class
+  namespace_defaults:              # glob prefix -> class, for name-only entries outside the canonical table
+    "flow.*": identifier
+    "dec.*": digest

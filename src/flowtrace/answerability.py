@@ -23,6 +23,15 @@ does not execute, is reported `not_evaluated` — never answerable (FTC §4.4:
 scenario as not evaluated rather than as answerable"). For the score a
 not-evaluated scenario contributes zero, like an unanswerable one, so that a
 P0 flow with unevaluable scenarios cannot pass.
+
+Streams (revision 2026-10-11, FTC §4.4; spec §4.1): a scenario is evaluated
+on the assurance stream unless it needs a required attribute of class
+`content`, which is never carried there; such a scenario reads the sampled
+stream. A binding may declare `stream: sampled | assurance` explicitly (the
+contract); without it the engine decides by whether any `content` attribute
+of the step is named in the scenario's `required_data` (free text, so a
+heuristic — the binding's field is the clean way). With one export the two
+streams are the same adapter and the choice is bookkeeping.
 """
 from __future__ import annotations
 
@@ -40,12 +49,16 @@ from .flows import Flow
 PLACEHOLDER_RE = re.compile(r"^\s*<.*>\s*$", re.S)
 
 
+STREAMS = ("assurance", "sampled")
+
+
 @dataclass(frozen=True)
 class ResolvedQuery:
     dialect: str
     text: str
     expected_shape: dict
     source: str                      # descriptor | binding:<path>
+    stream: str | None = None        # a binding's declared stream (sampled | assurance), else None
 
 
 @dataclass
@@ -59,6 +72,7 @@ class ScenarioResult:
     rows: int | None = None
     columns: list[str] = field(default_factory=list)
     reason: str | None = None
+    stream: str = "assurance"        # the stream the query read (spec §4.1)
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -98,6 +112,8 @@ def load_query_bindings(paths: Sequence[str | pathlib.Path]) -> list[dict]:
                     raise ValueError(f"{p}: bindings[{i}] lacks {key}")
             if "scenario" not in b and "index" not in b:
                 raise ValueError(f"{p}: bindings[{i}] needs scenario (name) or index")
+            if b.get("stream") not in (None, *STREAMS):
+                raise ValueError(f"{p}: bindings[{i}] stream must be one of {STREAMS}")
             out.append(dict(b, _source=f"binding:{p.name}"))
     return out
 
@@ -109,7 +125,8 @@ def resolve_query(flow_id: str, step_id: str, index: int, scenario: Mapping[str,
             continue
         if ("index" in b and int(b["index"]) == index) or ("scenario" in b and b["scenario"] == scenario.get("scenario")):
             return ResolvedQuery(dialect=str(b["dialect"]), text=str(b["text"]),
-                                 expected_shape=dict(b.get("expected_shape") or {"min_rows": 1}), source=b["_source"])
+                                 expected_shape=dict(b.get("expected_shape") or {"min_rows": 1}), source=b["_source"],
+                                 stream=b.get("stream"))
     text = scenario.get("verification_query")
     if not isinstance(text, str) or is_placeholder(text):
         return None
@@ -129,37 +146,57 @@ def check_shape(result: QueryResult, expected: Mapping[str, Any]) -> tuple[bool,
     return True, None
 
 
+# ---------------------------------------------------------------- streams
+def scenario_stream(scenario: Mapping[str, Any], declared: str | None, content_names: set[str] | None) -> str:
+    """The stream a scenario's query reads (spec §4.1): the binding's declared
+    `stream` wins; else `sampled` iff the scenario's `required_data` names a
+    required attribute of class `content` of its step; else `assurance`."""
+    if declared in STREAMS:
+        return declared
+    text = " ".join(str(x) for x in (scenario.get("required_data") or []) if x is not None)
+    if any(name and name in text for name in (content_names or ())):
+        return "sampled"
+    return "assurance"
+
+
 # ---------------------------------------------------------------- evaluation
 def evaluate(flow: Flow, adapter: Adapter, window: Window, bindings: Sequence[Mapping[str, Any]],
-             default_dialect: str, required: bool) -> AnswerabilityResult:
+             default_dialect: str, required: bool, *, sampled_adapter: Adapter | None = None,
+             sampled_window: Window | None = None, content_attributes: Mapping[str, set[str]] | None = None) -> AnswerabilityResult:
+    """`adapter` / `window` are the assurance stream; `sampled_adapter` /
+    `sampled_window` the sampled stream when it is a distinct export (else
+    the same). `content_attributes` maps step id -> names of its required
+    attributes of class content (flowtrace.coverage.content_attributes)."""
     results: list[ScenarioResult] = []
     for step in flow.steps:
         for i, sc in enumerate(step.get("debug_scenarios") or []):
             name = str(sc.get("scenario", f"scenario[{i}]"))
             q = resolve_query(flow.id, step["id"], i, sc, bindings, default_dialect)
+            stream = scenario_stream(sc, q.stream if q else None, (content_attributes or {}).get(step["id"]))
+            ad, win = (sampled_adapter or adapter, sampled_window or window) if stream == "sampled" else (adapter, window)
             if q is None:
-                results.append(ScenarioResult(step["id"], i, name, "not_evaluated",
+                results.append(ScenarioResult(step["id"], i, name, "not_evaluated", stream=stream,
                                               reason="verification_query is a placeholder and no query binding resolves it"))
                 continue
-            if q.dialect not in adapter.dialects:
-                results.append(ScenarioResult(step["id"], i, name, "not_evaluated", dialect=q.dialect, source=q.source,
-                                              reason=f"adapter {adapter.name} does not execute dialect {q.dialect!r} "
-                                                     f"(supports {sorted(adapter.dialects)})"))
+            if q.dialect not in ad.dialects:
+                results.append(ScenarioResult(step["id"], i, name, "not_evaluated", dialect=q.dialect, source=q.source, stream=stream,
+                                              reason=f"adapter {ad.name} does not execute dialect {q.dialect!r} "
+                                                     f"(supports {sorted(ad.dialects)})"))
                 continue
             try:
-                res = adapter.query(q.dialect, q.text, window)
+                res = ad.query(q.dialect, q.text, win)
             except UnsupportedDialect:
-                results.append(ScenarioResult(step["id"], i, name, "not_evaluated", dialect=q.dialect, source=q.source,
+                results.append(ScenarioResult(step["id"], i, name, "not_evaluated", dialect=q.dialect, source=q.source, stream=stream,
                                               reason=f"adapter refused dialect {q.dialect!r}"))
                 continue
             except QueryError as e:
-                results.append(ScenarioResult(step["id"], i, name, "unanswerable", dialect=q.dialect, source=q.source,
+                results.append(ScenarioResult(step["id"], i, name, "unanswerable", dialect=q.dialect, source=q.source, stream=stream,
                                               reason=f"query error: {e}"))
                 continue
             ok, why = check_shape(res, q.expected_shape)
             results.append(ScenarioResult(step["id"], i, name, "answerable" if ok else "unanswerable",
                                           dialect=q.dialect, source=q.source, rows=res.row_count,
-                                          columns=list(res.columns), reason=why))
+                                          columns=list(res.columns), reason=why, stream=stream))
     declared = len(results)
     answerable = sum(1 for r in results if r.status == "answerable")
     not_eval = sum(1 for r in results if r.status == "not_evaluated")

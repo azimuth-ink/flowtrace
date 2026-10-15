@@ -29,6 +29,32 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, Sequence, runtime_checkable
 
 
+# The canonical flow-attribute namespace (FTC §4.7, the shared-canon table)
+# with each attribute's class (FTC §4.4; revision 2026-10-11): `identifier`
+# names a thing, `digest` commits to a value without disclosing it. Every
+# attribute here belongs on the assurance stream. The three `dec.*` digests of
+# an effect step's evidence (added 2026-10-11) are what make the step's span
+# joinable to the authorization and completion evidence issued around it and
+# to the human approval the authorization cites. The deprecated aliases
+# (`flow.segment.id` -> flow.step, `flow.priority` -> flow.criticality) are
+# mapped on ingest by the adapters and never emitted (canon resolution C).
+CANONICAL_ATTRIBUTES: dict[str, str] = {
+    "flow.id": "identifier",                   # declared flow id (entry component, at the trigger)
+    "flow.version": "identifier",              # flow semver at execution time
+    "flow.step": "identifier",                 # current declared step id, on the hosting component's boundary span
+    "flow.criticality": "identifier",          # P0..P3 (was flow.priority)
+    "flow.step.criticality": "identifier",     # per-step override
+    "flow.step.nd_class": "identifier",        # ND0..ND3 as declared
+    "flow.run_id": "identifier",               # only when an explicit run id differs from the trace id
+    "dec.step_cert_digest": "digest",          # sha256 digest of the DEC step certificate for this span's step
+    "dec.run_cert_digest": "digest",           # digest of the run certificate (entry component, at run end)
+    "dec.authz_cert_digest": "digest",         # digest of the authorization evidence (policy-decision record) for this span's effect step
+    "dec.completion_cert_digest": "digest",    # digest of the completion evidence for this span's effect step
+    "dec.approval_digest": "digest",           # digest of the human_approval attestation referenced by the authorization evidence
+}
+EFFECT_STEP_ATTRIBUTES = ("dec.authz_cert_digest", "dec.completion_cert_digest", "dec.approval_digest")
+
+
 class UnsupportedDialect(Exception):
     """Raised by Adapter.query for a dialect the adapter does not execute."""
 

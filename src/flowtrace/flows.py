@@ -85,6 +85,18 @@ class Flow:
         return None if v is None else float(v)
 
     @property
+    def assurance_sampling_floor(self) -> float | None:
+        """`spec.telemetry.assurance_sampling_floor` (revision 2026-10-11, FTC
+        §4.4): the retention floor of the assurance stream; None when the
+        flow declares a single stream."""
+        v = ((self.doc.get("spec") or {}).get("telemetry") or {}).get("assurance_sampling_floor")
+        return None if v is None else float(v)
+
+    @property
+    def declares_assurance_stream(self) -> bool:
+        return self.assurance_sampling_floor is not None
+
+    @property
     def required_signals(self) -> list[str]:
         return list(((self.doc.get("spec") or {}).get("telemetry") or {}).get("required_signals") or [])
 
@@ -213,6 +225,29 @@ def git_commit(path: str | pathlib.Path) -> str | None:
 
 def required_trace_specs(step: Mapping[str, Any]) -> list[dict]:
     return list(((step.get("required_telemetry") or {}).get("traces")) or [])
+
+
+ATTRIBUTE_CLASSES = ("identifier", "digest", "content")
+
+
+def attribute_entries(spec: Mapping[str, Any]) -> list[dict]:
+    """A trace spec's `required_attributes[]` normalized to
+    `[{name, class | None}]`: a string entry (the form of flow.spec/v0.2
+    before 2026-10-11 and of the v2.0.0 canon) declares no class; an object
+    `{name, class}` declares one (FTC §4.4)."""
+    out = []
+    for e in spec.get("required_attributes") or []:
+        if isinstance(e, Mapping):
+            name = e.get("name")
+            if name:
+                out.append({"name": str(name), "class": (str(e["class"]) if e.get("class") else None)})
+        elif isinstance(e, str) and e:
+            out.append({"name": e, "class": None})
+    return out
+
+
+def required_attribute_names(spec: Mapping[str, Any]) -> list[str]:
+    return [e["name"] for e in attribute_entries(spec)]
 
 
 def required_metric_specs(step: Mapping[str, Any]) -> list[dict]:

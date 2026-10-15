@@ -24,7 +24,7 @@ from .adapters.base import Window
 from .answerability import evaluate as evaluate_answerability, load_query_bindings
 from .config import load_config, weights_for
 from .conformance import SLI_NAMES, evaluate as evaluate_conformance, evaluate_slis
-from .coverage import (CertificateIndex, compose, evaluate_completeness, evaluate_cost_attribution,
+from .coverage import (CertificateIndex, compose, content_attributes, evaluate_completeness, evaluate_cost_attribution,
                        evaluate_detectability, evaluate_execution_evidence, index_runs, load_alerts,
                        observed_slo_values)
 from .decompose import decompose_flow
@@ -48,6 +48,8 @@ class GateInputs:
     baseline: str | None = None
     execution_evidence: bool | None = None       # None = per config
     sampling_rate: float | None = None
+    assurance_telemetry: Sequence[str] = field(default_factory=list)   # the assurance stream as a second export (spec §4.1)
+    assurance_sampling_rate: float | None = None                       # its effective rate (spec §2.4)
     reproducible: bool = False
     registry: str | None = None
     adapter: str = "otlp_duckdb"
@@ -99,15 +101,57 @@ def _reading_findings(conformance: dict, severity: str) -> list[dict]:
     return out
 
 
+@dataclass
+class Streams:
+    """The two streams of spec §4.1: the assurance stream (coverage and
+    conformance are computed from it) and the sampled stream (content
+    attributes and the scenarios that need them). With one export they are
+    the same adapter and window."""
+    assurance: Any
+    assurance_window: Window
+    sampled: Any
+    sampled_window: Window
+    assurance_rate: float
+    sampling_rate: float
+    assurance_source: list[str]
+    sampled_source: list[str]
+
+    @property
+    def distinct(self) -> bool:
+        return self.assurance is not self.sampled
+
+
+def effective_floors(flow: Flow, pol) -> dict:
+    """Spec §2.3 / §2.4: the floors the two streams' assumed rates are
+    checked against. With a declared assurance floor the tier's floor is
+    satisfied by the assurance stream and the sampled stream's floor is the
+    descriptor's own; otherwise the one stream's floor is the larger of the
+    tier's and the descriptor's."""
+    flow_floor = flow.sampling_floor
+    if flow.declares_assurance_stream:
+        return {"assurance": max(pol.sampling_floor, flow.assurance_sampling_floor), "sampled": flow_floor or 0.0,
+                "declared_assurance_floor": flow.assurance_sampling_floor, "declared_sampling_floor": flow_floor}
+    one = max(pol.sampling_floor, flow_floor or 0.0)
+    return {"assurance": one, "sampled": one, "declared_assurance_floor": None, "declared_sampling_floor": flow_floor}
+
+
 def evaluate_flow(flow: Flow, adapter, window: Window, cfg: dict, *, alerts, bindings, index, exec_enabled: bool,
-                  sampling_rate: float, baseline_flow: dict | None) -> dict:
+                  sampling_rate: float, baseline_flow: dict | None, streams: Streams | None = None) -> dict:
+    """`adapter` / `window` are the assurance stream (the stream coverage is
+    computed from); `streams` carries the sampled stream when it is a
+    distinct export, else both are this one."""
     pol = policy(cfg, flow.criticality)
+    if streams is None:
+        streams = Streams(adapter, window, adapter, window, sampling_rate, sampling_rate, ["telemetry"], ["telemetry"])
     spans_all = adapter.list_spans(flow.id, window)
     spans = [s for s in spans_all if s.attributes.get("flow.version") == flow.version]
     other_versions = sorted({s.attributes.get("flow.version") or "<none>" for s in spans_all} - {flow.version})
     runs = index_runs(spans)
+    sampled_runs = runs if not streams.distinct else index_runs(
+        [s for s in streams.sampled.list_spans(flow.id, streams.sampled_window) if s.attributes.get("flow.version") == flow.version])
     metrics = adapter.list_metrics(flow.id, window, flow.version)
     logs = adapter.list_logs(flow.id, window, flow.version)
+    namespace_defaults = (cfg.get("attribute_classes") or {}).get("namespace_defaults")
     findings: list[dict] = []
     for w in flow.warnings:
         findings.append(_finding("deprecated-alias" if "R-DEPRECATED" in w else "flow-warning", "warn", w))
@@ -120,9 +164,12 @@ def evaluate_flow(flow: Flow, adapter, window: Window, cfg: dict, *, alerts, bin
     slis = evaluate_slis(flow, conformance, cfg)
 
     # --- components -----------------------------------------------------------
-    completeness = evaluate_completeness(flow, runs, metrics, logs)
+    completeness = evaluate_completeness(flow, runs, metrics, logs, sampled_runs=sampled_runs, namespace_defaults=namespace_defaults,
+                                         assurance_export_distinct=streams.distinct)
     answerability = evaluate_answerability(flow, adapter, window, bindings, cfg["telemetry"]["default_dialect"],
-                                           required=pol.answerability_required)
+                                           required=pol.answerability_required, sampled_adapter=streams.sampled,
+                                           sampled_window=streams.sampled_window,
+                                           content_attributes=content_attributes(flow, namespace_defaults))
     detectability = evaluate_detectability(flow, runs, alerts, pol.alert_latency_s, slis=slis)
     cost = evaluate_cost_attribution(flow, runs, cfg["cost"]["attributes"])
     components: dict[str, dict] = {
@@ -130,18 +177,51 @@ def evaluate_flow(flow: Flow, adapter, window: Window, cfg: dict, *, alerts, bin
         "detectability": detectability, "cost_attribution": cost,
     }
     if exec_enabled:
+        ee = cfg["scoring"]["execution_evidence"]
         components["execution_evidence"] = evaluate_execution_evidence(
-            flow, runs, index, run_binding=str(cfg["scoring"]["execution_evidence"].get("run_binding", "warn")))
+            flow, runs, index, run_binding=str(ee.get("run_binding", "warn")), count_completion=bool(ee.get("count_completion", False)))
     weights = weights_for(cfg, exec_enabled)
     score, eff_weights = compose(components, weights)
+
+    # --- streams and floors (§2.4, §4.1) ---------------------------------------
+    floors = effective_floors(flow, pol)
+    stream_report = {
+        "assurance": {"source": streams.assurance_source, "assumed_rate": streams.assurance_rate, "effective_floor": floors["assurance"],
+                      "declared_floor": floors["declared_assurance_floor"], "runs": len(runs)},
+        "sampled": {"source": streams.sampled_source, "assumed_rate": streams.sampling_rate, "effective_floor": floors["sampled"],
+                    "declared_floor": floors["declared_sampling_floor"], "runs": len(sampled_runs)},
+        "distinct_exports": streams.distinct,
+    }
+    effective_sampling = streams.assurance_rate if flow.declares_assurance_stream else streams.sampling_rate
 
     # --- findings -------------------------------------------------------------
     for sid in completeness["blind_spots"]:
         findings.append(_finding("blind-spot", "fail", f"step {sid} has no attributable telemetry in the window", sid))
-    floor = max(pol.sampling_floor, flow.sampling_floor or 0.0)
-    if sampling_rate + EPS < floor:
+    if flow.declares_assurance_stream:
+        asf, sf = flow.assurance_sampling_floor, flow.sampling_floor
+        if sf is not None and asf + EPS < sf:
+            findings.append(_finding("assurance-floor-below-sampling-floor", "fail",
+                                     f"assurance_sampling_floor {asf} is below sampling_floor {sf}: the assurance stream is drawn from the "
+                                     f"sampled stream and cannot be retained more sparsely than it (validator R15 rejects this descriptor first)"))
+        if streams.assurance_rate + EPS < floors["assurance"]:
+            findings.append(_finding("assurance-sampling-below-floor", "fail",
+                                     f"effective assurance sampling {streams.assurance_rate} is below the effective assurance floor "
+                                     f"{floors['assurance']} (tier {pol.tier} floor {pol.sampling_floor} / flow assurance_sampling_floor {asf})"))
+        if streams.sampling_rate + EPS < floors["sampled"]:
+            findings.append(_finding("sampling-below-floor", "fail",
+                                     f"effective sampling {streams.sampling_rate} of the sampled stream is below the flow's sampling_floor {floors['sampled']} "
+                                     f"(the tier's floor is satisfied by the assurance stream)"))
+    elif sampling_rate + EPS < floors["sampled"]:
         findings.append(_finding("sampling-below-floor", "fail",
-                                 f"effective sampling {sampling_rate} is below the floor {floor} (tier {pol.tier} / flow sampling_floor)"))
+                                 f"effective sampling {sampling_rate} is below the floor {floors['sampled']} (tier {pol.tier} / flow sampling_floor)"))
+    if completeness["class_assumed"] and bool((cfg.get("attribute_classes") or {}).get("warn_on_assumed", True)):
+        findings.append(_finding("attribute-class-assumed", "warn",
+                                 f"{len(completeness['class_assumed'])} required attribute(s) declare no class and were read as identifier: "
+                                 f"{', '.join(completeness['class_assumed'])} (declare `class` on the entry; FTC §4.4)"))
+    for c in completeness["content_on_assurance"]:
+        findings.append(_finding("content-on-assurance-stream", "warn",
+                                 f"step {c['step']}: attribute {c['attribute']} (class content) was found on the assurance stream export in "
+                                 f"{c['runs']} run(s); the flow declared it would not be carried there (FTC §4.4)", c["step"]))
     if pol.answerability_required and not flow.has_answerability_block:
         findings.append(_finding("answerability-block-missing", "fail",
                                  f"tier {pol.tier} requires the answerability block (slo / required_telemetry / debug_scenarios) on at least one step"))
@@ -160,6 +240,11 @@ def evaluate_flow(flow: Flow, adapter, window: Window, cfg: dict, *, alerts, bin
             if st["fraction"] < 1.0:
                 findings.append(_finding("evidence-missing", "warn",
                                          f"step {sid}: {st['verified']}/{st['runs']} runs carry a verifiable dec.step_cert_digest", sid))
+        for sid, st in components["execution_evidence"].get("authorization", {}).items():
+            if st["fraction"] < 1.0:
+                findings.append(_finding("authorization-missing", "warn",
+                                         f"step {sid}: {st['verified']}/{st['runs']} runs carry a verifying dec.authz_cert_digest "
+                                         f"(statuses {st['statuses']})", sid))
 
     # --- decomposition from the window's own history --------------------------
     observed = observed_slo_values(flow, runs)
@@ -210,7 +295,7 @@ def evaluate_flow(flow: Flow, adapter, window: Window, cfg: dict, *, alerts, bin
     return {
         "id": flow.id, "version": flow.version, "criticality": flow.criticality, "descriptor": flow.path.name,
         "descriptor_sha256": flow.sha256, "tier_policy": pol.as_dict(),
-        "runs_sampled": len(runs), "spans": len(spans), "effective_sampling": sampling_rate,
+        "runs_sampled": len(runs), "spans": len(spans), "effective_sampling": effective_sampling, "streams": stream_report,
         "score": score, "threshold": pol.coverage_threshold, "verdict": verdict, "verdict_reasons": reasons,
         "weights": eff_weights, "execution_evidence_enabled": exec_enabled,
         "components": components, "decomposition": decomposition, "conformance": conformance, "slis": slis,
@@ -226,25 +311,44 @@ def run_gate(inp: GateInputs) -> tuple[dict, int]:
         raise GateUsageError("execution evidence is enabled: pass --trust-bundle and --dec-dir (or disable scoring.execution_evidence)")
     if not inp.telemetry:
         raise GateUsageError("at least one --telemetry file")
-    for p in list(inp.telemetry) + [inp.alerts, inp.trust_bundle, inp.baseline, inp.methods] + list(inp.queries) + list(inp.dec_dirs):
+    for p in (list(inp.telemetry) + list(inp.assurance_telemetry) + [inp.alerts, inp.trust_bundle, inp.baseline, inp.methods]
+              + list(inp.queries) + list(inp.dec_dirs)):
         if p and not pathlib.Path(p).exists():
             raise GateUsageError(f"not found: {p}")
     try:
         flows = load_flows(inp.flows, registry=inp.registry, strict=inp.strict_flows)
     except FlowError as e:
         raise GateUsageError(str(e)) from None
-    adapter = load_adapter(inp.adapter, inp.telemetry, accept_deprecated_aliases=bool(cfg["telemetry"].get("accept_deprecated_aliases", True)))
-    window = adapter.extent()
+    accept_aliases = bool(cfg["telemetry"].get("accept_deprecated_aliases", True))
+    sampled_adapter = load_adapter(inp.adapter, inp.telemetry, accept_deprecated_aliases=accept_aliases)
+    sampled_window = sampled_adapter.extent()
+    sampling = float(inp.sampling_rate if inp.sampling_rate is not None else cfg["telemetry"].get("assumed_sampling_rate", 1.0))
+    cfg_arate = cfg["telemetry"].get("assumed_assurance_sampling_rate")
+    assurance_rate = float(inp.assurance_sampling_rate if inp.assurance_sampling_rate is not None
+                           else cfg_arate if cfg_arate is not None else sampling)
+    if inp.assurance_telemetry:
+        # the assurance stream exported apart from the sampled stream (spec §4.1): its window must overlap the sampled one
+        adapter = load_adapter(inp.adapter, inp.assurance_telemetry, accept_deprecated_aliases=accept_aliases)
+        window = adapter.extent()
+        if (window.start_ns is not None and sampled_window.start_ns is not None
+                and (window.end_ns <= sampled_window.start_ns or sampled_window.end_ns <= window.start_ns)):
+            raise GateUsageError(f"--assurance-telemetry window [{window.start_ns}, {window.end_ns}) does not overlap "
+                                 f"--telemetry's [{sampled_window.start_ns}, {sampled_window.end_ns})")
+        streams = Streams(adapter, window, sampled_adapter, sampled_window, assurance_rate, sampling,
+                          [_rel(t, inp.reproducible) for t in inp.assurance_telemetry], [_rel(t, inp.reproducible) for t in inp.telemetry])
+    else:
+        adapter, window = sampled_adapter, sampled_window
+        streams = Streams(adapter, window, adapter, window, assurance_rate, sampling,
+                          [_rel(t, inp.reproducible) for t in inp.telemetry], [_rel(t, inp.reproducible) for t in inp.telemetry])
     alerts = load_alerts(inp.alerts) if inp.alerts else None
     bindings = load_query_bindings(inp.queries) if inp.queries else []
     index = (CertificateIndex(inp.dec_dirs, inp.trust_bundle, flows_dir=inp.flows, methods=inp.methods)
              if (inp.dec_dirs or inp.trust_bundle) else None)
-    sampling = float(inp.sampling_rate if inp.sampling_rate is not None else cfg["telemetry"].get("assumed_sampling_rate", 1.0))
     baseline = json.loads(pathlib.Path(inp.baseline).read_text(encoding="utf-8")) if inp.baseline else None
     base_flows = {f["id"]: f for f in (baseline or {}).get("flows", [])}
 
     results = [evaluate_flow(f, adapter, window, cfg, alerts=alerts, bindings=bindings, index=index,
-                             exec_enabled=exec_enabled, sampling_rate=sampling, baseline_flow=base_flows.get(f.id))
+                             exec_enabled=exec_enabled, sampling_rate=sampling, baseline_flow=base_flows.get(f.id), streams=streams)
                for f in flows]
     counts = adapter.counts() if hasattr(adapter, "counts") else {}
     verdict = "pass" if all(r["verdict"] == "pass" for r in results) else "fail"
@@ -256,6 +360,8 @@ def run_gate(inp: GateInputs) -> tuple[dict, int]:
             "flows_commit": None if inp.reproducible else git_commit(inp.flows),
             "telemetry": [_rel(t, inp.reproducible) for t in inp.telemetry],
             "telemetry_sha256": [_sha256(t) for t in inp.telemetry],
+            "assurance_telemetry": [_rel(t, inp.reproducible) for t in inp.assurance_telemetry],
+            "assurance_telemetry_sha256": [_sha256(t) for t in inp.assurance_telemetry],
             "config": _rel(inp.config, inp.reproducible) or "<defaults>",
             "alerts": _rel(inp.alerts, inp.reproducible),
             "queries": [_rel(q, inp.reproducible) for q in inp.queries],
@@ -267,7 +373,8 @@ def run_gate(inp: GateInputs) -> tuple[dict, int]:
             "dialects": sorted(adapter.dialects),
         },
         "window": dict(window.as_dict(), **counts),
-        "ingest_warnings": list(adapter.ingest_warnings) + (index.errors if index else []),
+        "ingest_warnings": list(adapter.ingest_warnings) + (list(sampled_adapter.ingest_warnings) if streams.distinct else [])
+                           + (index.errors if index else []),
         "flows": results,
         "verdict": verdict,
         "exit_code": 0 if verdict == "pass" else 1,
@@ -302,14 +409,26 @@ def format_summary(report: dict) -> str:
             elif k == "cost_attribution":
                 extra = f"  steps {sum(1 for s in c['by_step'].values() if s['attributable'])}/{len(c['by_step'])} attributable"
             elif k == "execution_evidence":
-                extra = "  " + ", ".join(f"{sid} {st['verified']}/{st['runs']}" for sid, st in c["steps"].items())
+                parts = [f"{sid} {st['verified']}/{st['runs']}" for sid, st in c["steps"].items()]
+                parts += [f"{sid} authz {st['verified']}/{st['runs']}" for sid, st in (c.get("authorization") or {}).items()]
+                extra = "  " + ", ".join(parts)
+                if c.get("authorization_coverage") is not None:
+                    extra += (f"  (certificates {c['certificate_coverage'] if c['certificate_coverage'] is not None else '-'}"
+                              f", authorization {c['authorization_coverage']:.4f})")
             na = "" if c.get("applicable", True) else "  (not applicable)"
             lines.append(f"  {k:<19} {float(c['score']):.4f}  weight {w if w is not None else '-'}{na}{extra}")
+        st = f.get("streams")
+        if st and (st["distinct_exports"] or st["assurance"]["declared_floor"] is not None):
+            lines.append(f"  streams             assurance rate {st['assurance']['assumed_rate']} (floor {st['assurance']['effective_floor']}, "
+                         f"{st['assurance']['runs']} runs); sampled rate {st['sampled']['assumed_rate']} (floor {st['sampled']['effective_floor']}, "
+                         f"{st['sampled']['runs']} runs){'; two exports' if st['distinct_exports'] else '; one export'}")
         conf = f["conformance"]
         lines.append(f"  conformance         window {conf['window']['reading']}"
                      + (f" absent={conf['window']['absent']}" if conf["window"]["absent"] else "")
                      + (f" divergent={conf['window']['divergent']}" if conf["window"]["divergent"] else "")
                      + f"; runs {conf['summary']['by_reading']}")
+        for u in conf["summary"].get("unchecked") or []:
+            lines.append(f"  UNCHECKED           {u}")
         if f.get("slis"):
             for name, s in f["slis"].items():
                 count = s.get("degraded_runs", s.get("vetoed_runs"))

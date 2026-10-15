@@ -23,6 +23,14 @@ Attribute values are rendered as strings (ints and floats via `str`, bools as
 (`attributes['cost.usd']::DOUBLE`). The deprecated aliases `flow.segment.id`
 and `flow.priority` (FTC v1.0) are mapped on ingest to `flow.step` and
 `flow.criticality` with a warning (resolution C) and are never re-emitted.
+The canonical namespace the rows carry is `flowtrace.adapters.base.CANONICAL_ATTRIBUTES`
+(FTC §4.7): `flow.*` identifiers and the `dec.*` digests, including the three
+effect-step digests of the revision of 2026-10-11 (`dec.authz_cert_digest`,
+`dec.completion_cert_digest`, `dec.approval_digest`), which this adapter
+passes through like any other attribute — the engine reads them off the
+effect step's boundary span (spec §6.6, §7.6). A second export may be loaded
+as the assurance stream (`--assurance-telemetry`, spec §4.1); the adapter is
+the same.
 
 Relational schema (the ``otel-sql`` dialect contract — spec §5.2)
 -----------------------------------------------------------------

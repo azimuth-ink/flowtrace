@@ -23,7 +23,8 @@
               "scenario": "Limit evaluated against stale reference data",
               "source": "binding:quote-issue.queries.yaml",
               "status": "answerable",
-              "step": "s4"
+              "step": "s4",
+              "stream": "assurance"
             }
           ],
           "score": 1.0
@@ -33,42 +34,92 @@
           "blind_spots": [],
           "by_step": {
             "s1": {
+              "attributes": [],
               "complete_runs": 32,
               "fraction": 1.0,
               "missing": {},
+              "not_evaluated": {},
               "present_runs": 32
             },
             "s2": {
+              "attributes": [],
               "complete_runs": 32,
               "fraction": 1.0,
               "missing": {},
+              "not_evaluated": {},
               "present_runs": 32
             },
             "s3": {
+              "attributes": [],
               "complete_runs": 32,
               "fraction": 1.0,
               "missing": {},
+              "not_evaluated": {},
               "present_runs": 32
             },
             "s4": {
+              "attributes": [
+                {
+                  "class": "identifier",
+                  "class_assumed": false,
+                  "class_source": "namespace",
+                  "name": "flow.id",
+                  "span_name": "risk.limits-check/evaluate",
+                  "stream": "assurance"
+                },
+                {
+                  "class": "identifier",
+                  "class_assumed": false,
+                  "class_source": "namespace",
+                  "name": "flow.step",
+                  "span_name": "risk.limits-check/evaluate",
+                  "stream": "assurance"
+                },
+                {
+                  "class": "identifier",
+                  "class_assumed": true,
+                  "class_source": "assumed",
+                  "name": "risk.limit_id",
+                  "span_name": "risk.limits-check/evaluate",
+                  "stream": "assurance"
+                },
+                {
+                  "class": "identifier",
+                  "class_assumed": true,
+                  "class_source": "assumed",
+                  "name": "risk.decision",
+                  "span_name": "risk.limits-check/evaluate",
+                  "stream": "assurance"
+                }
+              ],
               "complete_runs": 32,
               "fraction": 1.0,
               "missing": {},
+              "not_evaluated": {},
               "present_runs": 32
             },
             "s5": {
+              "attributes": [],
               "complete_runs": 32,
               "fraction": 1.0,
               "missing": {},
+              "not_evaluated": {},
               "present_runs": 32
             },
             "s6": {
+              "attributes": [],
               "complete_runs": 32,
               "fraction": 1.0,
               "missing": {},
+              "not_evaluated": {},
               "present_runs": 32
             }
           },
+          "class_assumed": [
+            "s4:risk.decision",
+            "s4:risk.limit_id"
+          ],
+          "content_on_assurance": [],
           "reason": null,
           "runs_complete": 32,
           "runs_sampled": 32,
@@ -216,6 +267,17 @@
         },
         "execution_evidence": {
           "applicable": true,
+          "authorization": {},
+          "authorization_coverage": null,
+          "certificate_coverage": 1.0,
+          "completion_coverage": null,
+          "populations": {
+            "authorization": [],
+            "certificates": [
+              "s4"
+            ],
+            "completion": []
+          },
           "reason": null,
           "run_binding": "warn",
           "score": 1.0,
@@ -1505,6 +1567,11 @@
       "execution_evidence_enabled": true,
       "findings": [
         {
+          "code": "attribute-class-assumed",
+          "message": "2 required attribute(s) declare no class and were read as identifier: s4:risk.decision, s4:risk.limit_id (declare `class` on the entry; FTC §4.4)",
+          "severity": "warn"
+        },
+        {
           "code": "evidence-run-binding",
           "message": "step s4: 31 verified certificate(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4",
           "severity": "warn"
@@ -1558,6 +1625,27 @@
       "score": 1.0,
       "slis": null,
       "spans": 224,
+      "streams": {
+        "assurance": {
+          "assumed_rate": 1.0,
+          "declared_floor": null,
+          "effective_floor": 1.0,
+          "runs": 32,
+          "source": [
+            "quote-issue.full.otlp.jsonl"
+          ]
+        },
+        "distinct_exports": false,
+        "sampled": {
+          "assumed_rate": 1.0,
+          "declared_floor": 0.1,
+          "effective_floor": 1.0,
+          "runs": 32,
+          "source": [
+            "quote-issue.full.otlp.jsonl"
+          ]
+        }
+      },
       "threshold": 1.0,
       "tier_policy": {
         "alert_latency_s": 60.0,
@@ -1589,6 +1677,8 @@
   "inputs": {
     "adapter": "otlp_duckdb",
     "alerts": "alerts.yaml",
+    "assurance_telemetry": [],
+    "assurance_telemetry_sha256": [],
     "baseline": null,
     "config": "flowtrace.yaml",
     "dec_dirs": [

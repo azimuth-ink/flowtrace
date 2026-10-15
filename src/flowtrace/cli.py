@@ -1,8 +1,8 @@
 """`flowtrace` command line.
 
-  flowtrace gate --flows DIR --telemetry FILE [--config flowtrace.yaml] [--alerts alerts.yaml]
-                 [--queries q.yaml] [--trust-bundle B] [--dec-dir D] [--baseline report.json]
-                 [--execution-evidence] [--sampling-rate X] [--out coverage-report.json] [--reproducible]
+  flowtrace gate --flows DIR --telemetry FILE [--assurance-telemetry FILE] [--config flowtrace.yaml] [--alerts alerts.yaml]
+                 [--queries q.yaml] [--trust-bundle B] [--dec-dir D] [--methods M] [--baseline report.json]
+                 [--execution-evidence] [--sampling-rate X] [--assurance-sampling-rate Y] [--out coverage-report.json] [--reproducible]
   flowtrace decompose --flows DIR [--config C] [--history h.yaml] [--sample-runs N]
   flowtrace tier (--score S | --dimension name=value ...) [--config C]
   flowtrace conformance --flows DIR --telemetry FILE [--dec-dir D]
@@ -28,7 +28,8 @@ def cmd_gate(args) -> int:
     inp = GateInputs(flows=args.flows, telemetry=args.telemetry, config=args.config, alerts=args.alerts,
                      trust_bundle=args.trust_bundle, dec_dirs=args.dec_dir or [], methods=args.methods, queries=args.queries or [],
                      baseline=args.baseline, execution_evidence=(True if args.execution_evidence else None),
-                     sampling_rate=args.sampling_rate, reproducible=args.reproducible, registry=args.registry,
+                     sampling_rate=args.sampling_rate, assurance_telemetry=args.assurance_telemetry or [],
+                     assurance_sampling_rate=args.assurance_sampling_rate, reproducible=args.reproducible, registry=args.registry,
                      adapter=args.adapter, out=args.out, strict_flows=args.strict)
     try:
         report, rc = run_gate(inp)
@@ -148,6 +149,10 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--baseline", help="a previous coverage-report.json to print deltas against")
     g.add_argument("--execution-evidence", action="store_true", help="enable the execution-evidence component (also scoring.execution_evidence.enabled)")
     g.add_argument("--sampling-rate", type=float, help="effective trace sampling rate of the export (default: config telemetry.assumed_sampling_rate)")
+    g.add_argument("--assurance-telemetry", action="append",
+                   help="the assurance stream as a second OTLP/JSON export (spec §4.1); repeatable; without it --telemetry is both streams")
+    g.add_argument("--assurance-sampling-rate", type=float,
+                   help="effective sampling rate of the assurance stream (default: config telemetry.assumed_assurance_sampling_rate, else --sampling-rate)")
     g.add_argument("--registry", help="polydiagram registry stub for R5 (component resolution)")
     g.add_argument("--strict", action="store_true", help="fail on R-DEPRECATED warnings in the flow descriptors")
     g.add_argument("--adapter", default="otlp_duckdb")

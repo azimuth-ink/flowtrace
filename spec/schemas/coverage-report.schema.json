@@ -26,6 +26,8 @@
         "flows_commit": { "type": ["string", "null"], "description": "git HEAD of the flow set, when it lives in a repository; null under --reproducible." },
         "telemetry": { "type": "array", "items": { "type": "string" } },
         "telemetry_sha256": { "type": "array", "items": { "type": "string", "pattern": "^[0-9a-f]{64}$" } },
+        "assurance_telemetry": { "type": "array", "items": { "type": "string" }, "description": "[D15] the assurance stream's export(s) when given apart from --telemetry (spec §4.1); empty when one export is both streams." },
+        "assurance_telemetry_sha256": { "type": "array", "items": { "type": "string", "pattern": "^[0-9a-f]{64}$" } },
         "config": { "type": "string" },
         "alerts": { "type": ["string", "null"] },
         "queries": { "type": "array", "items": { "type": "string" } },
@@ -64,6 +66,18 @@
         "score": { "$ref": "#/$defs/score" },
         "applicable": { "type": "boolean", "description": "false = dropped from the weighted sum and the remaining weights renormalized." },
         "reason": { "type": ["string", "null"] }
+      }
+    },
+    "evidencePopulation": {
+      "type": "object",
+      "required": ["runs", "verified", "fraction", "statuses", "run_binding_mismatches", "examples"],
+      "properties": {
+        "runs": { "type": "integer" },
+        "verified": { "type": "integer" },
+        "fraction": { "$ref": "#/$defs/score" },
+        "statuses": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "run_binding_mismatches": { "type": "integer" },
+        "examples": { "type": "array" }
       }
     },
     "finding": {
@@ -112,6 +126,31 @@
           }
         },
         "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "stream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "assumed_rate", "effective_floor", "declared_floor", "runs"],
+      "properties": {
+        "source": { "type": "array", "items": { "type": "string" }, "description": "the export file(s) the stream was read from" },
+        "assumed_rate": { "$ref": "#/$defs/score" },
+        "effective_floor": { "$ref": "#/$defs/score", "description": "spec §2.3 / §2.4: the floor the assumed rate is checked against" },
+        "declared_floor": { "type": ["number", "null"], "description": "the descriptor's assurance_sampling_floor / sampling_floor, when declared" },
+        "runs": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "requiredAttribute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["span_name", "name", "class", "class_assumed", "class_source", "stream"],
+      "properties": {
+        "span_name": { "type": ["string", "null"] },
+        "name": { "type": "string" },
+        "class": { "enum": ["identifier", "digest", "content"] },
+        "class_assumed": { "type": "boolean", "description": "true when the entry declared no class and none of the namespace rules applied (read as identifier; finding attribute-class-assumed)" },
+        "class_source": { "enum": ["declared", "namespace", "assumed"] },
+        "stream": { "enum": ["assurance", "sampled"], "description": "content attributes are read from the sampled stream, everything else from the assurance stream (FTC §4.4)" }
       }
     },
     "sli": {
@@ -164,7 +203,18 @@
         },
         "runs_sampled": { "type": "integer", "minimum": 0 },
         "spans": { "type": "integer", "minimum": 0 },
-        "effective_sampling": { "type": "number", "minimum": 0, "maximum": 1 },
+        "effective_sampling": { "type": "number", "minimum": 0, "maximum": 1, "description": "The assumed rate of the stream the score was computed from: the assurance stream's when the flow declares one (FTC §4.5), else the export's." },
+        "streams": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "[D15] the two streams of spec §4.1 with their sources, assumed rates and effective floors (spec §2.4).",
+          "required": ["assurance", "sampled", "distinct_exports"],
+          "properties": {
+            "assurance": { "$ref": "#/$defs/stream" },
+            "sampled": { "$ref": "#/$defs/stream" },
+            "distinct_exports": { "type": "boolean", "description": "true when --assurance-telemetry was given; false when one export is both streams." }
+          }
+        },
         "score": { "$ref": "#/$defs/score" },
         "threshold": { "$ref": "#/$defs/score" },
         "verdict": { "enum": ["pass", "fail"] },
@@ -196,9 +246,17 @@
                       "present_runs": { "type": "integer" },
                       "complete_runs": { "type": "integer" },
                       "fraction": { "$ref": "#/$defs/score" },
-                      "missing": { "type": "object", "additionalProperties": { "type": "integer" } }
+                      "missing": { "type": "object", "additionalProperties": { "type": "integer" } },
+                      "attributes": { "type": "array", "items": { "$ref": "#/$defs/requiredAttribute" }, "description": "[D15] every required attribute with its resolved class and stream (spec §4.1)." },
+                      "not_evaluated": { "type": "object", "additionalProperties": { "type": "integer" }, "description": "[D15] per content attribute, runs absent from the sampled stream (not evaluated, not missing)." }
                     }
                   }
+                },
+                "class_assumed": { "type": "array", "items": { "type": "string" }, "description": "[D15] step:attribute entries whose class was assumed." },
+                "content_on_assurance": {
+                  "type": "array",
+                  "description": "[D15] content-class attributes found on the assurance export (finding content-on-assurance-stream).",
+                  "items": { "type": "object", "required": ["step", "attribute", "runs"], "properties": { "step": { "type": "string" }, "attribute": { "type": "string" }, "runs": { "type": "integer" } } }
                 }
               }
             },
@@ -223,7 +281,8 @@
                       "source": { "type": ["string", "null"] },
                       "rows": { "type": ["integer", "null"] },
                       "columns": { "type": "array", "items": { "type": "string" } },
-                      "reason": { "type": ["string", "null"] }
+                      "reason": { "type": ["string", "null"] },
+                      "stream": { "enum": ["assurance", "sampled"], "description": "[D15] the stream the query read (spec §4.1)" }
                     }
                   }
                 }
@@ -283,20 +342,29 @@
                 "warnings": { "type": "array", "items": { "type": "string" } },
                 "steps": {
                   "type": "object",
-                  "description": "Keyed by the steps declared ND0/ND1 (binding B7).",
+                  "description": "Keyed by the steps declared ND0/ND1 (binding B7): certificate coverage.",
+                  "additionalProperties": { "$ref": "#/$defs/evidencePopulation" }
+                },
+                "authorization": {
+                  "type": "object",
+                  "description": "[D15] keyed by the steps declared effect: true (B7 extended, spec §6.6): authorization coverage, with the completion statuses and approval digests resolved and reported.",
                   "additionalProperties": {
-                    "type": "object",
-                    "required": ["runs", "verified", "fraction", "statuses", "run_binding_mismatches", "examples"],
+                    "allOf": [{ "$ref": "#/$defs/evidencePopulation" }],
                     "properties": {
-                      "runs": { "type": "integer" },
-                      "verified": { "type": "integer" },
-                      "fraction": { "$ref": "#/$defs/score" },
-                      "statuses": { "type": "object", "additionalProperties": { "type": "integer" } },
-                      "run_binding_mismatches": { "type": "integer" },
-                      "examples": { "type": "array" }
+                      "completion_status": { "type": "object", "additionalProperties": { "type": "integer" }, "description": "per run: the completion evidence's status (completed | failed | unknown | reconciled) or why it did not resolve" },
+                      "completion_run_binding_mismatches": { "type": "integer" },
+                      "approval_present": {
+                        "type": "object",
+                        "required": ["spans_with_digest", "resolved"],
+                        "properties": { "spans_with_digest": { "type": "integer" }, "resolved": { "type": "integer" } }
+                      }
                     }
                   }
-                }
+                },
+                "certificate_coverage": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "[D15] the ND0/ND1 population alone (null without one)" },
+                "authorization_coverage": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "[D15] the effect-step population alone (null without one)" },
+                "completion_coverage": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "[D15] with scoring.execution_evidence.count_completion: the effect steps' completion evidence with status completed | reconciled" },
+                "populations": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } } }
               }
             }
           }
