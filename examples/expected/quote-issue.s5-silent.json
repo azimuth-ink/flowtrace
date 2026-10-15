@@ -243,8 +243,12 @@
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -254,14 +258,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "0ec48f04368aefcd285ac089ef19e701"
+            "termination": null,
+            "trace_id": "0ec48f04368aefcd285ac089ef19e701",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -271,14 +288,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "0f02a90b27e410dd610a05f93da890c9"
+            "termination": null,
+            "trace_id": "0f02a90b27e410dd610a05f93da890c9",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -288,14 +318,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "119474d6edb83661791dc98b56d700c5"
+            "termination": null,
+            "trace_id": "119474d6edb83661791dc98b56d700c5",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -305,14 +348,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "14f6dba0c8416bdf312560ab918f372d"
+            "termination": null,
+            "trace_id": "14f6dba0c8416bdf312560ab918f372d",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -322,14 +378,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "14f8201319e677b492d1fdf8a9942b70"
+            "termination": null,
+            "trace_id": "14f8201319e677b492d1fdf8a9942b70",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -339,14 +408,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "187eb87c75ca7e601914e702ae17e083"
+            "termination": null,
+            "trace_id": "187eb87c75ca7e601914e702ae17e083",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -356,14 +438,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "1c6b08a8e14e397863346373be859032"
+            "termination": null,
+            "trace_id": "1c6b08a8e14e397863346373be859032",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -373,14 +468,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "3ddd954ac1f85ebaa61da6b6dc0835ab"
+            "termination": null,
+            "trace_id": "3ddd954ac1f85ebaa61da6b6dc0835ab",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -390,14 +498,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "3e02148463da3193d043c775817cb686"
+            "termination": null,
+            "trace_id": "3e02148463da3193d043c775817cb686",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -407,14 +528,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "3e4b663adfdb2cc56e01123e7f0c50fd"
+            "termination": null,
+            "trace_id": "3e4b663adfdb2cc56e01123e7f0c50fd",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -424,14 +558,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "4585a544dd940f7318cdf6b90817e0f4"
+            "termination": null,
+            "trace_id": "4585a544dd940f7318cdf6b90817e0f4",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -441,14 +588,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "49db7184b2dd6a4dcfe2612f14f83d5f"
+            "termination": null,
+            "trace_id": "49db7184b2dd6a4dcfe2612f14f83d5f",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -458,14 +618,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "4a5e8b3b8875b55e00a6aeb692060f5f"
+            "termination": null,
+            "trace_id": "4a5e8b3b8875b55e00a6aeb692060f5f",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -475,14 +648,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "6be17936f3117af3250cbb4fd9b74d40"
+            "termination": null,
+            "trace_id": "6be17936f3117af3250cbb4fd9b74d40",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -492,14 +678,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "6d8e311c5d92de0816bcd0b9c6905ce8"
+            "termination": null,
+            "trace_id": "6d8e311c5d92de0816bcd0b9c6905ce8",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -509,14 +708,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "6ea2395d34d286ab2f2c824dfc6bee31"
+            "termination": null,
+            "trace_id": "6ea2395d34d286ab2f2c824dfc6bee31",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -526,14 +738,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "97aea3b601ee8a086923a4a14fc5977c"
+            "termination": null,
+            "trace_id": "97aea3b601ee8a086923a4a14fc5977c",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -543,14 +768,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "a68f5b1ed25d50262e9b0fff4bd9825a"
+            "termination": null,
+            "trace_id": "a68f5b1ed25d50262e9b0fff4bd9825a",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -560,12 +798,25 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "af6ea6abd1a78b15556686d1f3822aea"
+            "termination": null,
+            "trace_id": "af6ea6abd1a78b15556686d1f3822aea",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [],
+            "approximate": false,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "convergent",
             "realized": [
               "s1",
@@ -576,14 +827,28 @@
               "s6"
             ],
             "source": "manifest:run.dec.json",
-            "trace_id": "b8e06f909fc7110707032a18b942e128"
+            "termination": null,
+            "trace_id": "b8e06f909fc7110707032a18b942e128",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -593,14 +858,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "b9facf1c939183a57b533be22ec19000"
+            "termination": null,
+            "trace_id": "b9facf1c939183a57b533be22ec19000",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -610,14 +888,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "bb9719baf2000da396fd80b912ddc89b"
+            "termination": null,
+            "trace_id": "bb9719baf2000da396fd80b912ddc89b",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -627,14 +918,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "c67e47528ab9ad86064b6454048d3803"
+            "termination": null,
+            "trace_id": "c67e47528ab9ad86064b6454048d3803",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -644,14 +948,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "cf726cc59f56516b0cbb65d3e3f4a8c9"
+            "termination": null,
+            "trace_id": "cf726cc59f56516b0cbb65d3e3f4a8c9",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -661,14 +978,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "d0e4edae38a7dbd9c23a6fcfc3883874"
+            "termination": null,
+            "trace_id": "d0e4edae38a7dbd9c23a6fcfc3883874",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -678,14 +1008,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "d3b54788f0c3a19a1cbe77e104e7432e"
+            "termination": null,
+            "trace_id": "d3b54788f0c3a19a1cbe77e104e7432e",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -695,14 +1038,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "d90fede37313366df353d5e8dc4f9bc6"
+            "termination": null,
+            "trace_id": "d90fede37313366df353d5e8dc4f9bc6",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -712,14 +1068,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "e4e08644e7a046e61fe55367809334ae"
+            "termination": null,
+            "trace_id": "e4e08644e7a046e61fe55367809334ae",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -729,14 +1098,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "e92542dd284fefb182d7007d1cab4ce2"
+            "termination": null,
+            "trace_id": "e92542dd284fefb182d7007d1cab4ce2",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -746,14 +1128,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "f442073c23ccc5373241782707efbe25"
+            "termination": null,
+            "trace_id": "f442073c23ccc5373241782707efbe25",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -763,14 +1158,27 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "fabbd07ab52c0df9bc52cbf4037f7fe3"
+            "termination": null,
+            "trace_id": "fabbd07ab52c0df9bc52cbf4037f7fe3",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           },
           {
             "absent": [
               "s5"
             ],
+            "approximate": true,
+            "degraded": [],
             "divergent": [],
             "failed": [],
+            "notes": [],
+            "outcome": null,
             "reading": "absent",
             "realized": [
               "s1",
@@ -780,7 +1188,16 @@
               "s6"
             ],
             "source": "spans",
-            "trace_id": "feac7237945d8dd5c5c9555b08fe7e76"
+            "termination": null,
+            "trace_id": "feac7237945d8dd5c5c9555b08fe7e76",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
           }
         ],
         "summary": {
@@ -790,10 +1207,14 @@
             "divergent": 0,
             "failed-run": 0
           },
+          "degraded_runs": 0,
+          "manifest_runs": 1,
           "non_convergent_runs": 0,
           "notes": [],
           "off_plan_steps": {},
-          "runs": 32
+          "runs": 32,
+          "unchecked": [],
+          "vetoed_runs": 0
         },
         "window": {
           "absent": [
@@ -1146,6 +1567,7 @@
       },
       "runs_sampled": 32,
       "score": 0.633333,
+      "slis": null,
       "spans": 192,
       "threshold": 1.0,
       "tier_policy": {

@@ -83,11 +83,43 @@
       "properties": {
         "trace_id": { "type": "string" },
         "source": { "type": "string", "description": "spans, or manifest:<run certificate file> (binding B6)." },
-        "realized": { "type": "array", "items": { "type": "string" } },
+        "realized": { "type": "array", "items": { "type": "string" }, "description": "The paper's notation: `[sid]` unbound, `->sid` reached via a declared on_fail edge, `sid×n` n attempts (2026-10-11)." },
         "reading": { "enum": ["convergent", "absent", "divergent", "failed-run"] },
         "divergent": { "type": "array", "items": { "type": "string" } },
         "absent": { "type": "array", "items": { "type": "string" } },
-        "failed": { "type": "array", "items": { "type": "string" } }
+        "failed": { "type": "array", "items": { "type": "string" } },
+        "via": { "type": "array", "items": { "enum": ["primary", "on_fail"] }, "description": "[D11] per realized entry: from the manifest, or recorded by the engine from spans (spec §7.4)." },
+        "outcome": { "type": ["string", "null"], "description": "[D11] the manifest's outcome; `unknown` when read from spans as ending at an on_fail {outcome} step; null otherwise." },
+        "termination": { "type": ["string", "null"], "description": "[D11] the manifest's termination (completed | failed | cancelled | expired) when recorded." },
+        "degraded": { "type": "array", "items": { "type": "string" }, "description": "[D11] the declared degradation paths the run took (convergent by declaration)." },
+        "vetoed": { "type": "boolean", "description": "[D11] the run's outcome is block (manifest), or the run is read from spans as ending at a step whose on_fail outcome is block." },
+        "approximate": { "type": "boolean", "description": "[D11] true when the reading comes from spans alone (spec §6.7)." },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "sli": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rate", "band", "source", "approximate", "runs", "out_of_band", "notes"],
+      "properties": {
+        "rate": { "$ref": "#/$defs/score" },
+        "band": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["min", "max", "gate"],
+          "properties": {
+            "min": { "$ref": "#/$defs/score" },
+            "max": { "$ref": "#/$defs/score" },
+            "gate": { "type": "boolean" }
+          }
+        },
+        "source": { "enum": ["manifest", "spans", "mixed", "none"], "description": "manifest when every run carried a run certificate; spans when none did; mixed otherwise." },
+        "approximate": { "type": "boolean", "description": "true when any run's reading came from spans alone." },
+        "runs": { "type": "integer", "minimum": 0 },
+        "degraded_runs": { "type": "integer", "minimum": 0 },
+        "vetoed_runs": { "type": "integer", "minimum": 0 },
+        "out_of_band": { "enum": ["above", "below", null] },
+        "notes": { "type": "array", "items": { "type": "string" } }
       }
     },
     "flowResult": {
@@ -192,7 +224,8 @@
                     "required": ["scope", "slo", "target", "observed", "breached_in_window", "alert", "detectable", "reason"],
                     "properties": {
                       "scope": { "type": "string", "description": "flow, or a step id" },
-                      "slo": { "type": "string" },
+                      "slo": { "type": "string", "description": "an SLO key, or (2026-10-11) degradation_rate | veto_rate for a band bound made a target by alerts.yaml (spec §6.7)" },
+                      "bound": { "enum": ["max", "min"], "description": "[D11] which bound of the indicator's band this target is" },
                       "target": { "type": "number" },
                       "observed": { "type": ["number", "null"] },
                       "breached_in_window": { "type": ["boolean", "null"] },
@@ -287,9 +320,24 @@
                 "runs": { "type": "integer" },
                 "by_reading": { "type": "object", "additionalProperties": { "type": "integer" } },
                 "off_plan_steps": { "type": "object", "additionalProperties": { "type": "integer" } },
-                "non_convergent_runs": { "type": "integer" }
+                "non_convergent_runs": { "type": "integer" },
+                "degraded_runs": { "type": "integer", "description": "[D11] runs that took at least one declared degradation path." },
+                "vetoed_runs": { "type": "integer", "description": "[D11] runs whose outcome is block." },
+                "manifest_runs": { "type": "integer", "description": "[D11] runs whose reading took the run certificate's manifest as input (B6)." },
+                "unchecked": { "type": "array", "items": { "type": "string" }, "description": "Readings of spec §7.5–§7.7 that could not be checked for want of their evidence: neither findings nor passes (spec §9)." },
+                "notes": { "type": "array", "items": { "type": "string" } }
               }
             }
+          }
+        },
+        "slis": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "description": "[D11] The two-sided indicators of spec §6.7, reported beside the score for a flow that declares outcomes or any on_fail; null otherwise.",
+          "required": ["degradation_rate", "veto_rate"],
+          "properties": {
+            "degradation_rate": { "$ref": "#/$defs/sli" },
+            "veto_rate": { "$ref": "#/$defs/sli" }
           }
         },
         "observed_slos": { "type": "object" },

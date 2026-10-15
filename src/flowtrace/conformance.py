@@ -7,7 +7,8 @@ Two readings:
                      declared, unobserved; divergent = observed, undeclared
                      (off-plan). Continuous, per window.
   run (plan)         per run, the realized step DAG against the declared graph
-                     (`next`, bounds). Input per binding B6: the run
+                     (`next`, bounds, and — revision 2026-10-11 — the declared
+                     degradation edges). Input per binding B6: the run
                      certificate's manifest.steps[] when the run carries one
                      (found through dec.run_cert_digest on the trigger span or
                      subject.run_id == trace id); the run's boundary spans in
@@ -15,6 +16,20 @@ Two readings:
                      repeats without a loop step, loop-bound exceedance per
                      on_exceed (fail -> failed-run; flag -> divergent) and
                      absent declared steps are reported per run.
+
+Revision 2026-10-11 (spec §7.4, binding B9 as read here): a declared `on_fail`
+edge is part of the plan. From a manifest, an entry with `via: on_fail` is
+convergent iff the preceding entry's step declares that edge; `outcome` must
+be a declared outcome (or one of the default five); a later entry off every
+path from a `latch: true` target is a latched re-entry (divergent); a
+recorded `termination` of cancelled | expired leaves the unrun steps not
+absent. From spans alone the engine records `via: on_fail` itself for a
+transition that is a declared `to` edge and not a `next` edge, cannot tell
+the two apart where they share a target (the canon's s5 -> s6; note
+`shared-target`), and reads a run that ends at a step with an `on_fail
+{outcome}` edge as having taken it with `outcome: unknown`. The two-sided
+indicators of spec §6.7 (degradation rate, veto rate) are computed from the
+same per-run readings.
 
 The per-run rules are agent-dec's `conformance_reading` (spec/01, the
 reference reading of a manifest) when agent-dec is installed; the local
@@ -26,18 +41,41 @@ from __future__ import annotations
 from typing import Any, Mapping, Sequence
 
 from .coverage import CertificateIndex, Run, observed_steps
-from .flows import Flow
+from .flows import DEFAULT_OUTCOMES, Flow, degradation_edges, degradation_target
+
+SLI_NAMES = ("degradation_rate", "veto_rate")
 
 
 # ----------------------------------------------------------------- local rules
+def _flow_steps(doc: Mapping[str, Any]) -> list[dict]:
+    return [s for s in (doc.get("spec") or {}).get("steps") or [] if isinstance(s, dict)]
+
+
+def _declared_outcomes(doc: Mapping[str, Any]) -> list[str]:
+    v = (doc.get("spec") or {}).get("outcomes")
+    return list(v) if isinstance(v, list) and v else list(DEFAULT_OUTCOMES)
+
+
 def _dag(doc: Mapping[str, Any]):
-    steps = [s for s in (doc.get("spec") or {}).get("steps") or [] if isinstance(s, dict)]
+    """Declared step graph: ids in document order, adjacency with the linear
+    default (the companion validator's R6) plus resolvable `on_fail.to` edges
+    (the validator reads them as step-graph edges too), the forward DAG, the
+    back-edges and transitive reachability. `primary` holds the `next` edges
+    alone: the path a run takes when nothing degrades."""
+    steps = _flow_steps(doc)
     ids = [s.get("id") for s in steps]
     kinds = {s.get("id"): s.get("kind", "sync") for s in steps}
-    adj = {}
+    adj, primary = {}, {}
     for i, s in enumerate(steps):
-        adj[s.get("id")] = [n for n in (s.get("next") or ([ids[i + 1]] if i + 1 < len(ids) else [])) if n in kinds]
+        nxt = [n for n in (s.get("next") or ([ids[i + 1]] if i + 1 < len(ids) else [])) if n in kinds]
+        primary[s.get("id")] = list(nxt)
+        on_fail = s.get("on_fail") if isinstance(s.get("on_fail"), dict) else {}
+        to = on_fail.get("to")
+        if to in kinds and to != s.get("id") and to not in nxt:
+            nxt = nxt + [to]
+        adj[s.get("id")] = nxt
     forward = {u: [] for u in ids}
+    back = set()
     color: dict[str, int] = {}
     if ids:
         root = ids[0]
@@ -47,7 +85,8 @@ def _dag(doc: Mapping[str, Any]):
             u, it = stack[-1]
             for v in it:
                 if color.get(v) == 1:
-                    continue                     # back-edge
+                    back.add((u, v))                 # back-edge
+                    continue
                 forward[u].append(v)
                 if color.get(v) is None:
                     color[v] = 1
@@ -66,13 +105,54 @@ def _dag(doc: Mapping[str, Any]):
             seen.add(v)
             todo.extend(adj[v])
         reach[u] = seen
-    return ids, kinds, adj, forward, reach, {s.get("id"): s for s in steps}
+    return ids, kinds, adj, forward, back, reach, primary, {s.get("id"): s for s in steps}
 
 
-def _reading(doc: Mapping[str, Any], realized: Sequence[tuple[str, str | None]]) -> dict:
-    ids, kinds, adj, forward, reach, by_id = _dag(doc)
-    divergent, absent, failed, seq = [], [], [], []
-    for pos, (sid, fs) in enumerate(realized, 1):
+def _entries(realized: Sequence) -> list[dict]:
+    """Normalize the manifest input: each entry is (step_id, flow_step|None)
+    or {step_id, flow_step?, via?, key?, attempt?}; `via` defaults to
+    primary (absent means primary)."""
+    out = []
+    for e in realized:
+        if isinstance(e, dict):
+            d = {"step_id": e.get("step_id"), "flow_step": e.get("flow_step"),
+                 "via": e.get("via") or "primary", "key": e.get("key"), "attempt": e.get("attempt")}
+        else:
+            sid, fs = e
+            d = {"step_id": sid, "flow_step": fs, "via": "primary", "key": None, "attempt": None}
+        out.append(d)
+    return out
+
+
+def _collapse_attempts(entries: list[dict]) -> list[dict]:
+    """Consecutive entries with the same flow_step whose certificates share
+    an idempotency key commitment and carry increasing attempt_id are one
+    declared step for the reading; `attempts` counts them (spec §7.5)."""
+    out: list[dict] = []
+    for e in entries:
+        last = out[-1] if out else None
+        if (last is not None and e["flow_step"] is not None and e["flow_step"] == last["flow_step"]
+                and e["key"] and e["key"] == last["key"] and e["attempt"] and last["last_attempt"]
+                and e["attempt"] > last["last_attempt"]):
+            last["attempts"] += 1
+            last["last_attempt"] = e["attempt"]
+            continue
+        d = dict(e)
+        d["attempts"], d["last_attempt"] = 1, e["attempt"]
+        out.append(d)
+    return out
+
+
+def _reading(doc: Mapping[str, Any], realized: Sequence, *, outcome: str | None = None,
+             termination: str | None = None, children_ok: bool | None = None) -> dict:
+    """The local reading; same rules and same result shape as agent-dec's
+    `conformance_reading` (asserted by the test suite)."""
+    ids, kinds, adj, forward, back, reach, primary, by_id = _dag(doc)
+    entries = _collapse_attempts(_entries(realized))
+    divergent, absent, failed, degraded, notes = [], [], [], [], []
+    seq = []
+    for pos, e in enumerate(entries, 1):
+        sid, fs = e["step_id"], e["flow_step"]
         if fs is None:
             divergent.append(f"off-plan: [{sid}] at position {pos} is unbound (no subject.flow)")
         elif fs not in kinds:
@@ -92,42 +172,160 @@ def _reading(doc: Mapping[str, Any], realized: Sequence[tuple[str, str | None]])
     for s in ids:
         if count.get(s, 0) > 1 and not may_repeat(s):
             divergent.append(f"repeat: {s} ran {count[s]} times without a declared loop step on its cycle")
+    exits = []          # (step, edge field) for declared edges to an outcome the run ended in
     for L in loop_steps:
         bound = by_id[L].get("bound") or {}
         mx, on_exceed = bound.get("max"), bound.get("on_exceed", "flag")
         n = count.get(L, 0)
         if isinstance(mx, int) and n > mx:
-            msg = f"loop-exceeded: {L} ran {n} times > bound.max {mx} (on_exceed: {on_exceed})"
-            (failed if on_exceed == "fail" else divergent).append(msg)
+            kind, value = degradation_target(on_exceed)
+            if on_exceed == "fail":
+                failed.append(f"loop-exceeded: {L} ran {n} times > bound.max {mx} (on_exceed: fail)")
+            elif kind == "outcome":
+                if outcome == value:
+                    degraded.append(f"{L} -> outcome {value} (bound.on_exceed after {n} iterations)")
+                    exits.append((L, "bound.on_exceed"))
+                else:
+                    divergent.append(f"loop-exceeded: {L} ran {n} times > bound.max {mx} and the run did not end in "
+                                     f"the declared on_exceed outcome {value} (outcome: {outcome})")
+            elif kind == "to":
+                divergent.append(f"loop-exceeded: {L} ran {n} times > bound.max {mx} (on_exceed: to {value})")
+            else:
+                divergent.append(f"loop-exceeded: {L} ran {n} times > bound.max {mx} (on_exceed: flag)")
     for u in ids:
         for v in forward[u]:
             if u in first and v in first and (first[u] > first[v] or last[u] > last[v]):
                 divergent.append(f"order: {v} precedes {u}, but the declared flow has {u} -> {v}")
+
+    # --- declared degradation (B9): via: on_fail entries, latches, outcome ---
+    taken = {}          # step -> target it degraded to by a taken `to` edge
+    latched = []        # (index of the on_fail entry, source step, target step)
+    for i, e in enumerate(entries):
+        if e["via"] != "on_fail":
+            continue
+        fs = e["flow_step"]
+        if fs not in kinds:
+            continue                                   # already divergent (off-plan)
+        prev_entries = [p for p in entries[:i] if p["flow_step"] in kinds]
+        if not prev_entries:
+            divergent.append(f"degradation: {fs} at position {i + 1} is reached via on_fail with no preceding step")
+            continue
+        src = prev_entries[-1]["flow_step"]
+        edges = [(f, k, v, l) for f, k, v, l in degradation_edges(by_id[src]) if k == "to" and v == fs]
+        if not edges:
+            divergent.append(f"degradation: {fs} at position {i + 1} is reached via on_fail, but the declared flow has no "
+                             f"on_fail or on_exceed edge {src} -> {fs}")
+            continue
+        field_name, _, _, latch = edges[0]
+        taken[src] = fs
+        degraded.append(f"{src} -> {fs} ({field_name}{', latched' if latch else ''})")
+        if latch:
+            latched.append((i, src, fs))
+    for i, src, tgt in latched:
+        for j, e in enumerate(entries[i + 1:], i + 1):
+            fs = e["flow_step"]
+            if fs in kinds and fs not in reach.get(tgt, set()):     # off every declared path from the target
+                divergent.append(f"latched re-entry: {fs} ran at position {j + 1} after the latched on_fail edge "
+                                 f"{src} -> {tgt} was taken")
+    if outcome is not None:
+        allowed = _declared_outcomes(doc)
+        if outcome not in allowed:
+            divergent.append(f"outcome: {outcome} is not among the declared outcomes ({', '.join(allowed)})")
+        elif ran:
+            L = ran[-1]
+            for field_name, kind, value, _ in degradation_edges(by_id[L]):
+                if field_name == "on_fail" and kind == "outcome" and value == outcome and (L, field_name) not in exits:
+                    exits.append((L, field_name))
+                    degraded.append(f"{L} -> outcome {value} ({field_name})")
+                    reason = _gate_authority_reason(by_id[L], value)
+                    if reason:
+                        divergent.append(reason)
+                    break
+    _attempt_rules(entries, kinds, by_id, outcome, degraded, divergent, exits)
+    if children_ok is False:
+        divergent.append("cancellation-not-propagated: a child run of this cancelled parent was not cancelled or "
+                         "completed within cancel_propagation_s (step 1d(c))")
+
+    # --- absent: the primary path, re-routed by the degradation edges the run took ---
     expected, todo = set(), ([ids[0]] if ids else [])
+    exited = {s for s, _ in exits}
     while todo:
         u = todo.pop()
         if u in expected:
             continue
         expected.add(u)
-        succ = forward[u]
-        if kinds[u] == "choice":
-            taken = [v for v in succ if v in first]
-            succ = taken or succ
+        if u in taken:
+            succ = [taken[u]]
+        elif u in exited and u == (ran[-1] if ran else None):
+            succ = []
+        else:
+            succ = [v for v in forward[u] if v in primary.get(u, [])]
+            if kinds[u] == "choice":
+                picked = [v for v in succ if v in first]
+                succ = picked or succ
         todo.extend(succ)
-    absent = [s for s in ids if s in expected and s not in first]
+    if termination in ("cancelled", "expired"):
+        absent = []
+        notes.append(f"termination {termination} recorded: steps not run are not absent")
+    else:
+        absent = [s for s in ids if s in expected and s not in first]
     reading = "failed-run" if failed else "divergent" if divergent else "absent" if absent else "convergent"
-    return {"reading": reading, "realized": seq, "manifest": list(realized),
-            "divergent": divergent, "absent": absent, "failed": failed}
+    return {"reading": reading, "realized": seq, "manifest": realized, "entries": entries,
+            "divergent": divergent, "absent": absent, "failed": failed, "degraded": degraded,
+            "notes": notes, "outcome": outcome, "termination": termination}
 
 
-def plan_reading(doc: Mapping[str, Any], realized: Sequence[tuple[str, str | None]]) -> dict:
-    """agent-dec's reading when available (one implementation of B6 across
+def _gate_authority_reason(step: Mapping[str, Any], outcome: str) -> str | None:
+    """Gate authority (binding B12) is the companion validator's R14 on
+    declarations; the reading carries no rule of its own in this unit."""
+    return None
+
+
+def _attempt_rules(entries, kinds, by_id, outcome, degraded, divergent, exits) -> None:
+    """Attempts of an effect step against `attempts.max` (spec §7.5; unit H4)."""
+    return None
+
+
+def plan_reading(doc: Mapping[str, Any], realized: Sequence, **kw) -> dict:
+    """agent-dec's reading when available (one implementation of B6/B9 across
     the three repositories), the local rules otherwise."""
     try:
         from agent_dec import verify_dec as vd  # type: ignore
-        return vd.conformance_reading(dict(doc), list(realized))
+        return vd.conformance_reading(dict(doc), list(realized), **kw)
     except ImportError:
-        return _reading(doc, realized)
+        return _reading(doc, realized, **kw)
+
+
+# ----------------------------------------------------------------- span reading
+def _realized_from_spans(flow: Flow, run: Run) -> tuple[list[dict], str | None, list[str]]:
+    """The boundary spans in start order as reading entries, with `via`
+    recorded by the engine (spec §7.4): a transition X -> Y is `on_fail` iff
+    Y is a declared `to` target of X and not in X's `next`; where the target
+    is shared with `next` the engine cannot tell and notes it. Returns
+    (entries, outcome the run is read as ending in | None, notes)."""
+    entries, notes = [], []
+    prev = None
+    for sid, _ in run.realized():
+        via = "primary"
+        if prev is not None:
+            step = flow.step(prev)
+            to_targets = [v for _, k, v, _ in degradation_edges(step or {}) if k == "to"]
+            if sid in to_targets:
+                if sid in flow.next_of(prev):
+                    notes.append(f"shared-target: {prev} -> {sid} is both a next edge and a declared on_fail/on_exceed "
+                                 f"target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)")
+                else:
+                    via = "on_fail"
+        entries.append({"step_id": sid, "flow_step": sid, "via": via, "key": None, "attempt": None})
+        prev = sid
+    ending_outcome = None
+    if entries:
+        last_step = flow.step(entries[-1]["flow_step"]) or {}
+        for field_name, kind, value, _ in degradation_edges(last_step):
+            if field_name == "on_fail" and kind == "outcome":
+                ending_outcome = value          # the run ends at the source step; its successors are not absent
+                break
+    return entries, ending_outcome, notes
 
 
 # ----------------------------------------------------------------- evaluation
@@ -144,31 +342,104 @@ def evaluate(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None
     if index is not None:
         index.run_binding_notes.clear()
     off_plan: dict[str, int] = {}
+    degraded_runs = vetoed_runs = 0
     for trace_id in sorted(runs):
         run = runs[trace_id]
         cert = index.run_certificate_for(run) if index is not None else None
+        notes: list[str] = []
+        approximate = False
         if cert is not None:
             path, rc = cert
-            realized = [(m["step_id"], m.get("flow_step")) for m in (rc.get("manifest") or {}).get("steps") or []]
+            man = rc.get("manifest") or {}
+            realized = [_manifest_entry(m, index) for m in man.get("steps") or []]
             source = f"manifest:{path.name}"
+            outcome, termination = man.get("outcome"), man.get("termination")
+            r = plan_reading(flow.doc, realized, outcome=outcome, termination=termination)
         else:
-            realized = [(sid, sid) for sid, _ in run.realized()]
+            realized, ending, notes = _realized_from_spans(flow, run)
             source = "spans"
-        r = plan_reading(flow.doc, realized)
+            approximate = True
+            outcome, termination = None, None
+            r = plan_reading(flow.doc, realized, outcome=ending)
+            if ending is not None:
+                # the engine cannot see the outcome; the run is read as ending at the source step (spec §7.4)
+                outcome = "unknown"
+                r["degraded"] = [d + " [spans]" for d in r["degraded"]]
         counts[r["reading"]] = counts.get(r["reading"], 0) + 1
         for d in r["divergent"]:
             if d.startswith("off-plan: "):
                 key = d.split(" ")[1]
                 off_plan[key] = off_plan.get(key, 0) + 1
+        degraded = list(r.get("degraded") or [])
+        vetoed = (outcome == "block") if cert is not None else (ending == "block" if approximate else False)
+        degraded_runs += bool(degraded)
+        vetoed_runs += bool(vetoed)
+        entries = r.get("entries") or _collapse_attempts(_entries(realized))
         per_run.append({"trace_id": trace_id, "source": source,
-                        "realized": [fs if fs is not None else f"[{sid}]" for sid, fs in realized],
-                        "reading": r["reading"], "divergent": r["divergent"], "absent": r["absent"], "failed": r["failed"]})
+                        "realized": [_entry_text(e) for e in entries],
+                        "via": [e["via"] for e in entries],
+                        "outcome": outcome, "termination": termination,
+                        "reading": r["reading"], "divergent": r["divergent"], "absent": r["absent"], "failed": r["failed"],
+                        "degraded": degraded, "vetoed": bool(vetoed), "approximate": approximate,
+                        "notes": notes + list(r.get("notes") or [])})
     return {
         "window": {"reading": window_reading, "declared": declared, "observed": sorted(observed),
                    "absent": absent, "divergent": divergent},
         "runs": per_run,
         "summary": {"runs": len(runs), "by_reading": counts, "off_plan_steps": dict(sorted(off_plan.items())),
-                    # runs with a divergent (off-plan, order, repeat, soft loop bound) or failed (hard loop bound) reading
+                    # runs with a divergent (off-plan, order, repeat, soft loop bound, latched re-entry, undeclared
+                    # outcome or edge) or failed (hard loop bound) reading
                     "non_convergent_runs": counts.get("divergent", 0) + counts.get("failed-run", 0),
+                    "degraded_runs": degraded_runs, "vetoed_runs": vetoed_runs,
+                    "manifest_runs": sum(1 for r in per_run if r["source"] != "spans"),
+                    "unchecked": [],
                     "notes": list(index.run_binding_notes) if index is not None else []},
     }
+
+
+def _manifest_entry(m: Mapping[str, Any], index: CertificateIndex | None) -> dict:
+    return {"step_id": m.get("step_id"), "flow_step": m.get("flow_step"), "via": m.get("via"), "key": None, "attempt": None}
+
+
+def _entry_text(e: Mapping[str, Any]) -> str:
+    """The paper's notation: `[sid]` for an unbound entry, `->sid` for an
+    entry reached via a declared on_fail edge, `sid×n` for n attempts."""
+    txt = e["flow_step"] if e["flow_step"] is not None else f"[{e['step_id']}]"
+    if e.get("via") == "on_fail":
+        txt = "->" + txt
+    if (e.get("attempts") or 1) > 1:
+        txt += f"×{e['attempts']}"
+    return txt
+
+
+# ----------------------------------------------------------------- the two SLIs (spec §6.7)
+def sli_band(cfg: Mapping[str, Any], flow_id: str, indicator: str) -> dict:
+    """{min, max, gate} for an indicator: `slis.<indicator>.flows.<flow>.band`
+    over `slis.<indicator>.band` over the whole range."""
+    block = ((cfg.get("slis") or {}).get(indicator) or {})
+    band = dict(block.get("band") or {})
+    band.update((block.get("flows") or {}).get(flow_id, {}).get("band") or {})
+    return {"min": float(band.get("min", 0.0)), "max": float(band.get("max", 1.0)), "gate": bool(band.get("gate", False))}
+
+
+def evaluate_slis(flow: Flow, conformance: Mapping[str, Any], cfg: Mapping[str, Any]) -> dict | None:
+    """Degradation rate (runs that took any declared degradation path) and
+    veto rate (runs whose outcome is block) over the window's runs, each
+    with its band and source. None when the flow declares neither
+    `outcomes` nor any `on_fail`."""
+    if not flow.declares_degradation:
+        return None
+    runs = conformance["runs"]
+    n = len(runs)
+    approximate = any(r["approximate"] for r in runs)
+    source = "manifest" if runs and not approximate else "spans" if runs and all(r["approximate"] for r in runs) else "mixed"
+    notes = sorted({nt for r in runs for nt in r["notes"] if nt.startswith("shared-target")})
+    out = {}
+    for name, key in (("degradation_rate", "degraded_runs"), ("veto_rate", "vetoed_runs")):
+        count = conformance["summary"][key]
+        rate = round(count / n, 6) if n else 0.0
+        band = sli_band(cfg, flow.id, name)
+        direction = "above" if rate > band["max"] + 1e-9 else "below" if rate < band["min"] - 1e-9 else None
+        out[name] = {"rate": rate, "band": band, "source": source if n else "none", "approximate": approximate,
+                     "runs": n, key: count, "out_of_band": direction, "notes": notes if name == "degradation_rate" else []}
+    return out

@@ -103,11 +103,17 @@ def cmd_conformance(args) -> int:
         print(f"{f.id}@{f.version}: window {w['reading']}"
               + (f" absent={w['absent']}" if w["absent"] else "") + (f" divergent={w['divergent']}" if w["divergent"] else ""))
         for r in res["runs"]:
-            print(f"  run {r['trace_id']} [{r['source']}]: {r['reading']}  realized: {' '.join(r['realized'])}")
+            recorded = [f"outcome: {r['outcome']}" if r.get("outcome") else "", f"termination: {r['termination']}" if r.get("termination") else ""]
+            print(f"  run {r['trace_id']} [{r['source']}]: {r['reading']}  realized: {' '.join(r['realized'])}"
+                  + ("  " + "  ".join(x for x in recorded if x) if any(recorded) else ""))
             for d in r["divergent"] + r["failed"]:
                 print(f"      {d}")
             if r["absent"]:
                 print(f"      absent: {' '.join(r['absent'])}")
+            if r.get("degraded"):
+                print(f"      degraded: {'; '.join(r['degraded'])}  (declared degradation paths taken; convergent by declaration)")
+            for n in r.get("notes") or []:
+                print(f"      note: {n}")
         if args.require_convergent and (w["reading"] != "convergent" or res["summary"]["non_convergent_runs"]):
             rc = 1
     return rc

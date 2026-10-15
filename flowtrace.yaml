@@ -74,6 +74,25 @@ scoring:
   # scores 0 when its inputs are missing.
 
 # ---------------------------------------------------------------------------
+# FTC §4.5 (revision 2026-10-11) — the two-sided indicators: degradation rate
+# (runs that took any declared on_fail edge / runs) and veto rate (runs whose
+# outcome is block / runs), each against a declared band {min, max} on
+# [0, 1]. A rate above the band is a quality signal, a rate below it a gate
+# that has stopped working; either direction is the finding sli-out-of-band
+# (warn, or fail when the band declares gate: true). flow.spec/v0.2 carries
+# no band field as of this revision, so the band lives here (spec §6.7); a
+# descriptor band, if a later schema carries one, takes precedence. The
+# shipped default is the whole range, so nothing fires until an operator
+# declares a band; `flows.<flow id>.band` overrides per flow.
+slis:
+  degradation_rate:
+    band: { min: 0.0, max: 1.0, gate: false }
+    flows: {}
+  veto_rate:
+    band: { min: 0.0, max: 1.0, gate: false }
+    flows: {}
+
+# ---------------------------------------------------------------------------
 # FTC §4.5 cost attribution — a step is attributable when its boundary spans
 # carry any of these attributes (cost/usage ledger columns are a later adapter).
 cost:

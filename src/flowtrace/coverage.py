@@ -203,11 +203,15 @@ def load_alerts(path: str | pathlib.Path) -> list[dict]:
         scope = a.get("scope") or ("step" if a.get("step") else "flow")
         if scope == "step" and not a.get("step"):
             raise ValueError(f"{path}: alerts[{i}] scope step needs a step id")
+        if a.get("bound") not in (None, "max", "min"):
+            raise ValueError(f"{path}: alerts[{i}] bound must be max or min")
         alerts.append({
             "id": a.get("id") or f"alert-{i}", "flow": a["flow"], "scope": scope, "step": a.get("step"),
             "slo": a["slo"], "threshold": float(a["threshold"]),
             "evaluation_window_s": float(a.get("evaluation_window_s", 0)),
             "notification_latency_s": float(a.get("notification_latency_s", 0)),
+            # revision 2026-10-11 (spec §6.7): for slo degradation_rate | veto_rate, which bound of the band the alert watches
+            "bound": a.get("bound"),
         })
     return alerts
 
@@ -255,15 +259,31 @@ def _breached(key: str, observed: float | None, target: float) -> bool | None:
     return observed > target
 
 
+def _sli_targets(slis: Mapping[str, Any] | None) -> list[tuple[str, str, float, str]]:
+    """Spec §6.7: an alert on `degradation_rate` / `veto_rate` makes the
+    band's bounds detectability targets — the upper bound when the band
+    declares one below 1.0 (`bound: max`), the lower bound when it declares
+    one above 0.0 (`bound: min`). Rows: (indicator, bound, bound value, rate)."""
+    out = []
+    for name, s in (slis or {}).items():
+        band = s["band"]
+        if band["max"] < 1.0:
+            out.append((name, "max", band["max"], s["rate"]))
+        if band["min"] > 0.0:
+            out.append((name, "min", band["min"], s["rate"]))
+    return out
+
+
 def evaluate_detectability(flow: Flow, runs: Mapping[str, Run], alerts: Sequence[Mapping[str, Any]] | None,
-                           alert_latency_bound_s: float) -> dict:
+                           alert_latency_bound_s: float, slis: Mapping[str, Any] | None = None) -> dict:
     slos = (flow.doc.get("spec") or {}).get("slos") or {}
     targets: list[tuple[str, str, float]] = [("flow", k, float(slos[k])) for k in FLOW_SLO_KEYS if k in slos]
     for s in flow.steps:
         for k in KNOWN_SLO_KEYS:
             if k in (s.get("slo") or {}):
                 targets.append((s["id"], k, float(s["slo"][k])))
-    if not targets:
+    sli_targets = _sli_targets(slis)
+    if not targets and not sli_targets:
         return {"score": 1.0, "applicable": False, "targets": [], "reason": "no SLO targets declared; component not applicable"}
     observed = observed_slo_values(flow, runs)
     rows, detectable = [], 0
@@ -291,6 +311,32 @@ def evaluate_detectability(flow: Flow, runs: Mapping[str, Run], alerts: Sequence
                 row["detectable"] = True
                 detectable += 1
         rows.append(row)
+    for name, bound, value, rate in sli_targets:
+        # an upper bound is breached when the rate rises above it; a lower bound when the rate falls below it
+        breach = (rate > value) if bound == "max" else (rate < value)
+        cands = [a for a in (alerts or []) if a["flow"] == flow.id and a["slo"] == name and a["scope"] == "flow"
+                 and (a.get("bound") or "max") == bound]
+        row = {"scope": "flow", "slo": name, "bound": bound, "target": value, "observed": rate,
+               "breached_in_window": breach, "alert": None, "detectable": False, "reason": None}
+        if not cands:
+            row["reason"] = f"no alert configured for the {bound} bound of the {name} band"
+        else:
+            a = cands[0]
+            latency = a["evaluation_window_s"] + a["notification_latency_s"]
+            adequate = (a["threshold"] <= value) if bound == "max" else (a["threshold"] >= value)
+            fired = (a["threshold"] <= rate) if bound == "max" else (a["threshold"] >= rate)
+            row["alert"] = {"id": a["id"], "threshold": a["threshold"], "detection_latency_s": latency}
+            if not adequate:
+                row["reason"] = f"alert threshold {a['threshold']} is looser than the band's {bound} {value}"
+            elif latency > alert_latency_bound_s:
+                row["reason"] = f"detection latency {latency}s exceeds the tier bound {alert_latency_bound_s}s"
+            elif breach and not fired:
+                row["reason"] = f"band breached ({rate}) but the alert would not have fired (threshold {a['threshold']})"
+            else:
+                row["detectable"] = True
+                detectable += 1
+        rows.append(row)
+    targets = targets + [(name, bound, value) for name, bound, value, _ in sli_targets]
     return {"score": detectable / len(targets), "applicable": True, "targets": rows,
             "alert_latency_bound_s": alert_latency_bound_s,
             "reason": None if alerts is not None else "no alert configuration supplied (--alerts)"}

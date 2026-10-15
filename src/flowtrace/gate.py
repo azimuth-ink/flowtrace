@@ -23,7 +23,7 @@ from .adapters import load_adapter
 from .adapters.base import Window
 from .answerability import evaluate as evaluate_answerability, load_query_bindings
 from .config import load_config, weights_for
-from .conformance import evaluate as evaluate_conformance
+from .conformance import SLI_NAMES, evaluate as evaluate_conformance, evaluate_slis
 from .coverage import (CertificateIndex, compose, evaluate_completeness, evaluate_cost_attribution,
                        evaluate_detectability, evaluate_execution_evidence, index_runs, load_alerts,
                        observed_slo_values)
@@ -75,6 +75,27 @@ def _finding(code: str, severity: str, message: str, step: str | None = None) ->
     return f
 
 
+# Divergence reasons of the per-run reading that the revision of 2026-10-11
+# names as finding codes (spec §9): the prefix the reading writes -> the code.
+READING_FINDING_CODES = (
+    ("latched re-entry:", "latched-reentry"),                         # [D11]
+    ("outcome:", "undeclared-outcome"),                               # [D11]
+    ("degradation:", "undeclared-edge"),                              # [D11]
+)
+
+
+def _reading_findings(conformance: dict, severity: str) -> list[dict]:
+    """One finding per named code, counting the runs whose reading carries
+    that reason; gated exactly as non-convergent-runs."""
+    out = []
+    for prefix, code in READING_FINDING_CODES:
+        hits = [(r["trace_id"], d) for r in conformance["runs"] for d in r["divergent"] if d.startswith(prefix)]
+        if hits:
+            runs = sorted({t for t, _ in hits})
+            out.append(_finding(code, severity, f"{len(runs)} run(s): {hits[0][1]}" + (f" (first of {len(hits)})" if len(hits) > 1 else "")))
+    return out
+
+
 def evaluate_flow(flow: Flow, adapter, window: Window, cfg: dict, *, alerts, bindings, index, exec_enabled: bool,
                   sampling_rate: float, baseline_flow: dict | None) -> dict:
     pol = policy(cfg, flow.criticality)
@@ -91,11 +112,15 @@ def evaluate_flow(flow: Flow, adapter, window: Window, cfg: dict, *, alerts, bin
         findings.append(_finding("other-flow-versions", "warn",
                                  f"{len(spans_all) - len(spans)} span(s) carry flow.version in {other_versions}; evaluated {flow.version} only"))
 
+    # --- conformance and the two-sided indicators (§7, §6.7) --------------------
+    conformance = evaluate_conformance(flow, runs, index)
+    slis = evaluate_slis(flow, conformance, cfg)
+
     # --- components -----------------------------------------------------------
     completeness = evaluate_completeness(flow, runs, metrics, logs)
     answerability = evaluate_answerability(flow, adapter, window, bindings, cfg["telemetry"]["default_dialect"],
                                            required=pol.answerability_required)
-    detectability = evaluate_detectability(flow, runs, alerts, pol.alert_latency_s)
+    detectability = evaluate_detectability(flow, runs, alerts, pol.alert_latency_s, slis=slis)
     cost = evaluate_cost_attribution(flow, runs, cfg["cost"]["attributes"])
     components: dict[str, dict] = {
         "completeness": completeness, "answerability": answerability.as_dict(),
@@ -139,14 +164,22 @@ def evaluate_flow(flow: Flow, adapter, window: Window, cfg: dict, *, alerts, bin
                "p99": {sid: v["latency_p99_ms"] for sid, v in observed.items() if sid != "flow"}}
     decomposition = decompose_flow(flow.doc, cfg, history, sample_runs=len(runs))
 
-    # --- conformance ----------------------------------------------------------
-    conformance = evaluate_conformance(flow, runs, index)
+    # --- conformance and indicator findings -------------------------------------
+    for name in SLI_NAMES:
+        s = (slis or {}).get(name)
+        if s and s["out_of_band"]:
+            count = s.get("degraded_runs", s.get("vetoed_runs"))
+            findings.append(_finding("sli-out-of-band", "fail" if s["band"]["gate"] else "warn",
+                                     f"{name} {s['rate']} is {s['out_of_band']} the declared band "
+                                     f"[{s['band']['min']}, {s['band']['max']}] ({count}/{s['runs']} runs; source {s['source']}"
+                                     f"{', approximate' if s['approximate'] else ''})"))
     if conformance["window"]["divergent"]:
         findings.append(_finding("off-plan-steps", "fail" if pol.require_convergent else "warn",
                                  f"observed steps not declared by the flow: {conformance['window']['divergent']}"))
     if conformance["summary"]["non_convergent_runs"]:
         findings.append(_finding("non-convergent-runs", "fail" if pol.require_convergent else "warn",
                                  f"{conformance['summary']['non_convergent_runs']} run(s) read divergent or failed against the authorized plan"))
+    findings += _reading_findings(conformance, "fail" if pol.require_convergent else "warn")
 
     # --- verdict --------------------------------------------------------------
     below = score + EPS < pol.coverage_threshold
@@ -177,7 +210,7 @@ def evaluate_flow(flow: Flow, adapter, window: Window, cfg: dict, *, alerts, bin
         "runs_sampled": len(runs), "spans": len(spans), "effective_sampling": sampling_rate,
         "score": score, "threshold": pol.coverage_threshold, "verdict": verdict, "verdict_reasons": reasons,
         "weights": eff_weights, "execution_evidence_enabled": exec_enabled,
-        "components": components, "decomposition": decomposition, "conformance": conformance,
+        "components": components, "decomposition": decomposition, "conformance": conformance, "slis": slis,
         "observed_slos": {scope: {k: (None if v is None else round(v, 6)) for k, v in vals.items()} for scope, vals in observed.items()},
         "findings": findings, "delta": delta,
     }
@@ -272,6 +305,12 @@ def format_summary(report: dict) -> str:
                      + (f" absent={conf['window']['absent']}" if conf["window"]["absent"] else "")
                      + (f" divergent={conf['window']['divergent']}" if conf["window"]["divergent"] else "")
                      + f"; runs {conf['summary']['by_reading']}")
+        if f.get("slis"):
+            for name, s in f["slis"].items():
+                count = s.get("degraded_runs", s.get("vetoed_runs"))
+                lines.append(f"  {name:<19} {s['rate']:.4f}  band [{s['band']['min']}, {s['band']['max']}]  {count}/{s['runs']} runs"
+                             f"  source {s['source']}{' (approximate)' if s['approximate'] else ''}"
+                             + (f"  OUT OF BAND ({s['out_of_band']})" if s["out_of_band"] else ""))
         if f["delta"]:
             d = f["delta"]
             lines.append(f"  delta vs baseline   score {d['baseline_score']:.4f} -> {d['score']:.4f} ({d['delta']:+.4f})")
