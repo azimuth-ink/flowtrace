@@ -9,7 +9,7 @@ from conftest import REPO
 import flowtrace
 
 VERSION = "0.1.0"
-PINS = {"polydiagram": "9345577", "agent-dec": "e8075f9"}
+PINS = {"polydiagram": "ce3598f", "agent-dec": "05874ca"}
 
 
 def test_versions_agree():
@@ -19,7 +19,8 @@ def test_versions_agree():
     assert cff["version"] == VERSION and str(cff["date-released"]) == "2026-10-10" and "doi" not in cff
     zen = json.loads((REPO / ".zenodo.json").read_text())
     assert zen["version"] == VERSION and zen["publication_date"] == "2026-10-10" and "doi" not in zen
-    assert f"## [{VERSION}] — 2026-10-10" in (REPO / "CHANGELOG.md").read_text()
+    changelog = (REPO / "CHANGELOG.md").read_text()
+    assert f"## [{VERSION}] — 2026-10-10" in changelog and "### 2026-10-15 — control-plane mechanics" in changelog
     spec = (REPO / "spec" / "coverage-engine.md").read_text()
     assert f"software {VERSION}" in spec
 
@@ -34,6 +35,10 @@ def test_pins_recorded_consistently():
         assert ref in readme, ref
         assert sha in wf, ref
     assert "azimuth-ink/agent-dec\n#   pin:        05874ca" in (REPO / "examples" / "dec" / "SOURCE").read_text()
+    mk = (REPO / "Makefile").read_text()
+    cff = (REPO / "CITATION.cff").read_text()
+    for repo, sha in PINS.items():
+        assert f"azimuth-ink/{repo}@{sha}" in mk and f"azimuth-ink/{repo}@{sha}" in cff, (repo, sha)
 
 
 def test_installed_package_finds_schemas_and_defaults():

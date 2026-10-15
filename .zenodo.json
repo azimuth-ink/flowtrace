@@ -3,7 +3,7 @@
   "upload_type": "software",
   "version": "0.1.0",
   "publication_date": "2026-10-10",
-  "description": "Reference implementation of the Flow-Based Telemetry Coverage method (FTC v1.1, defensive publication, concept DOI 10.5281/zenodo.21415947): consequence-based tiering (P0..P3 policy table), SLA-to-SLO decomposition over step DAGs with criticality and nondeterminism factors and the cold-start embodiment, answerability by verification-query contract (dialect + expected result shape), the multi-dimensional coverage score (telemetry completeness, debug answerability, SLO-breach detectability, cost attribution, and the optional execution-evidence component bound to signed per-step certificates), conformance of observed executions against the declared flow read as an authorized plan (convergent / absent / divergent, loop bounds), and the CI coverage gate with baseline deltas. Built on the companion specifications without redefining them: flow descriptors are flow.spec/v0.2 documents owned by azimuth-ink/polydiagram (software 0.3.0); execution evidence is verified by azimuth-ink/agent-dec's verifier (software 0.2.0) called as a library. Ships one backend adapter (OTLP/JSON export files into DuckDB, dialect otel-sql), the shared quote-issue running example with three synthetic telemetry windows and their expected reports, and a three-repository CI job. The FTC v1.1 paper is included under paper/ (CC0 1.0).",
+  "description": "Reference implementation of the Flow-Based Telemetry Coverage method (FTC v1.1, defensive publication, concept DOI 10.5281/zenodo.21415947): consequence-based tiering (P0..P3 policy table), SLA-to-SLO decomposition over step DAGs with criticality and nondeterminism factors and the cold-start embodiment, answerability by verification-query contract (dialect + expected result shape), the multi-dimensional coverage score (telemetry completeness, debug answerability, SLO-breach detectability, cost attribution, and the optional execution-evidence component bound to signed per-step certificates), conformance of observed executions against the declared flow read as an authorized plan (convergent / absent / divergent, loop bounds; and, from the revision of 2026-10-11, declared degradation paths and latches, outcomes and termination, attempts of an effect step with reconciliation before retry, authorization evidence for effect steps, cancellation propagation across runs), the two-sided degradation and veto rate indicators with declared bands, the assurance stream with attribute classes, and the CI coverage gate with baseline deltas. Built on the companion specifications without redefining them: flow descriptors are flow.spec/v0.2 documents owned by azimuth-ink/polydiagram (software 0.3.0); execution evidence is verified by azimuth-ink/agent-dec's verifier (software 0.2.0) called as a library. Ships one backend adapter (OTLP/JSON export files into DuckDB, dialect otel-sql), the shared quote-issue running example (2.1.0) with seven synthetic telemetry windows and their expected reports, and a three-repository CI job. The FTC v1.1 paper is included under paper/ (CC0 1.0).",
   "creators": [
     {
       "name": "Gray, Jeff",
@@ -42,6 +42,8 @@
     "answerability",
     "conformance checking",
     "execution evidence",
+    "assurance stream",
+    "degradation rate",
     "flow-based telemetry coverage"
   ]
 }

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "flowtrace"
 version = "0.1.0"
-description = "Reference implementation of Flow-Based Telemetry Coverage (FTC v1.1): consequence-based tiering, SLA-to-SLO decomposition over step DAGs, answerability by verification-query contract, the multi-dimensional coverage score (completeness, answerability, breach detectability, cost attribution, execution evidence), conformance against the declared flow as authorized plan, and the CI coverage gate — built on polydiagram's flow.spec/v0.2 and agent-dec's step certificates."
+description = "Reference implementation of Flow-Based Telemetry Coverage (FTC v1.1): consequence-based tiering, SLA-to-SLO decomposition over step DAGs, answerability by verification-query contract, the multi-dimensional coverage score (completeness, answerability, breach detectability, cost attribution, execution evidence incl. authorization coverage for effect steps) computed over the assurance stream, the degradation and veto rate indicators, conformance against the declared flow as authorized plan (degradation paths, attempts, termination, cancellation across runs), and the CI coverage gate — built on polydiagram's flow.spec/v0.2 and agent-dec's certificates and evidence artifacts."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
@@ -48,11 +48,13 @@ flowtrace = "flowtrace.cli:main"
 
 [project.optional-dependencies]
 # The companion repositories are consumed, never redefined (one schema, one
-# owner). Pinned to the v0.2-canon commits; see README "Pins" for the local
+# owner). Pinned to the commits of the revision of 2026-10-11 (polydiagram
+# R12–R15 / DG13; agent-dec authorization and completion evidence, steps
+# 1c/1d, dec-trust/0.2 classes); see README "Pins" for the local
 # sibling-checkout alternative used until those refs are pushed.
 companions = [
-  "polydiagram @ git+https://github.com/azimuth-ink/polydiagram@9345577",
-  "agent-dec @ git+https://github.com/azimuth-ink/agent-dec@e8075f9",
+  "polydiagram @ git+https://github.com/azimuth-ink/polydiagram@ce3598f",
+  "agent-dec @ git+https://github.com/azimuth-ink/agent-dec@05874ca",
 ]
 dev = ["pytest>=8", "hypothesis>=6"]
 

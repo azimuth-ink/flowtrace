@@ -22,6 +22,8 @@ keywords:
   - coverage
   - conformance checking
   - execution evidence
+  - assurance stream
+  - degradation rate
 references:
   - type: generic
     title: "Flow-Based Telemetry Coverage: A Method for Measuring and Governing Observability by Business-Flow Consequence"
@@ -39,7 +41,7 @@ references:
     year: 2026
     doi: 10.5281/zenodo.21524083
     version: 0.3.0
-    notes: "Owner of flow.spec/v0.2; pinned at azimuth-ink/polydiagram@9345577."
+    notes: "Owner of flow.spec/v0.2 (revision 2026-10-11: outcomes, on_fail, effect, attempts, attribute classes, assurance_sampling_floor; rules R12–R15); pinned at azimuth-ink/polydiagram@ce3598f."
   - type: software
     title: "Deterministic Execution Certificates (agent-dec)"
     authors:
@@ -48,4 +50,4 @@ references:
     year: 2026
     doi: 10.5281/zenodo.21524087
     version: 0.2.0
-    notes: "Verifier called as a library for execution-evidence coverage; pinned at azimuth-ink/agent-dec@e8075f9."
+    notes: "Verifier called as a library for execution-evidence and authorization coverage and the step-1d readings (revision 2026-10-11: authorization and completion evidence, human_approval, dec-trust/0.2 classes); pinned at azimuth-ink/agent-dec@05874ca."
