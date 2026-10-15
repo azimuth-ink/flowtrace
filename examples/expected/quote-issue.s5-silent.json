@@ -284,6 +284,9 @@
           "score": 1.0,
           "steps": {
             "s4": {
+              "evidence_types": {
+                "replay_recipe": 32
+              },
               "examples": [],
               "fraction": 1.0,
               "run_binding_mismatches": 31,

@@ -77,7 +77,8 @@
         "fraction": { "$ref": "#/$defs/score" },
         "statuses": { "type": "object", "additionalProperties": { "type": "integer" } },
         "run_binding_mismatches": { "type": "integer" },
-        "examples": { "type": "array" }
+        "examples": { "type": "array" },
+        "evidence_types": { "type": "object", "additionalProperties": { "type": "integer" }, "description": "[D13] per verified instance, the certificate's evidence.type: replay_recipe (replayable) or configuration_record (a hosted set-bounded method, attested by configuration provenance, never replayed)." }
       }
     },
     "finding": {

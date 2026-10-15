@@ -548,9 +548,22 @@ class CertificateIndex:
             return "flow-mismatch", f"{path.name}: subject.flow {got} != span {want} (B7)"
         if subj.get("class") not in REPLAYABLE_ND_CLASSES:
             return "class-mismatch", f"{path.name}: certificate class {subj.get('class')} is not ND0/ND1 (an attestation is not execution evidence)"
+        # [D13] a hosted method (method.kind: hosted, evidence.type: configuration_record, replay: none) verifies on the
+        # same conditions: the engine never attempts replay for any certificate, so nothing here is special-cased.
         if subj.get("run_id") != span.trace_id and span.attributes.get("flow.run_id") != subj.get("run_id"):
             return "run-binding-mismatch", f"{path.name}: subject.run_id {subj.get('run_id')} != span trace {span.trace_id} (B3/B4)"
         return "verified", None
+
+    def evidence_type(self, digest: str) -> str | None:
+        """[D13] the certificate's `evidence.type` (replay_recipe, …, or
+        configuration_record for a hosted set-bounded method), reported so
+        the report shows which evidence is attested by configuration
+        provenance rather than replayable; None when the digest is unknown."""
+        hit = self.steps.get(digest)
+        if hit is None:
+            return None
+        ev = hit[1].get("evidence") or {}
+        return str(ev.get("type")) if ev.get("type") else None
 
     # ---- revision 2026-10-11 (D15, spec §6.6): authorization evidence of an effect step ----
     def _bind(self, path: pathlib.Path, doc: dict, span: SpanRow) -> tuple[str, str] | None:
@@ -699,20 +712,25 @@ class CertificateIndex:
 
 
 def _evidence_population(population: Sequence[str], runs: Mapping[str, Run], index: CertificateIndex | None,
-                         run_binding: str, attribute: str, verify, label: str) -> tuple[dict[str, dict], int, int, list[str]]:
+                         run_binding: str, attribute: str, verify, label: str, evidence_type=None) -> tuple[dict[str, dict], int, int, list[str]]:
     """One population of the execution-evidence component (spec §6.5 / §6.6):
     per step and run, the boundary span's digest `attribute` verified by
     `verify(digest, span) -> (status, reason)`; run-binding mismatches count
-    as evidence under `warn` and are reported."""
+    as evidence under `warn` and are reported. `evidence_type(digest)`, when
+    given, is tallied per verified instance ([D13]: configuration_record
+    marks evidence attested by configuration provenance, not replay)."""
     by_step: dict[str, dict] = {}
     total = verified = 0
     warnings: list[str] = []
     for sid in population:
         st = {"runs": 0, "verified": 0, "statuses": {}, "run_binding_mismatches": 0, "examples": []}
+        if evidence_type is not None:
+            st["evidence_types"] = {}
         for run in runs.values():
             bounds = run.boundaries.get(sid) or []
             st["runs"] += 1
             total += 1
+            digest = None
             if not bounds:
                 status, reason = "missing-span", "step not observed in this run"
             else:
@@ -730,6 +748,9 @@ def _evidence_population(population: Sequence[str], runs: Mapping[str, Run], ind
             if status == "verified":
                 verified += 1
                 st["verified"] += 1
+                if evidence_type is not None:
+                    et = evidence_type(digest) or "unknown"
+                    st["evidence_types"][et] = st["evidence_types"].get(et, 0) + 1
             st["statuses"][status] = st["statuses"].get(status, 0) + 1
             if status != "verified" and len(st["examples"]) < 3:
                 st["examples"].append({"trace_id": run.trace_id, "status": status, "reason": reason})
@@ -790,7 +811,8 @@ def evaluate_execution_evidence(flow: Flow, runs: Mapping[str, Run], index: Cert
     verify_step = index.verify_step_digest if index is not None else None
     verify_authz = index.verify_authorization_digest if index is not None else None
     steps, c_total, c_verified, warnings = _evidence_population(replayable, runs, index, run_binding, "dec.step_cert_digest",
-                                                                verify_step, "certificate")
+                                                                verify_step, "certificate",
+                                                                evidence_type=(index.evidence_type if index is not None else (lambda d: None)))
     authz, a_total, a_verified, a_warn = _evidence_population(effect, runs, index, run_binding, "dec.authz_cert_digest",
                                                               verify_authz, "authorization record")
     warnings += a_warn
