@@ -383,8 +383,89 @@ def _realized_from_spans(flow: Flow, run: Run) -> tuple[list[dict], str | None, 
     return entries, ending_outcome, notes
 
 
+# ----------------------------------------------------------------- cancellation across runs (spec §7.7, binding B14)
+def _parse_ts(ts: str):
+    from datetime import datetime
+    t = ts.strip()
+    if t.endswith("Z") or t.endswith("z"):
+        t = t[:-1] + "+00:00"
+    return datetime.fromisoformat(t)
+
+
+def cancellation_check(flow: Flow, run_cert: Mapping[str, Any], index: CertificateIndex, *,
+                       cancel_propagation_default: float) -> tuple[bool | None, list[dict], list[dict]]:
+    """For a run whose manifest has termination cancelled and children[]: every
+    child's run certificate (--dec-dir, then --runs-dir, by subject.run_id)
+    must verify and record termination cancelled | completed with issued_at
+    not later than the parent's cancellation (manifest terminated_at, else
+    the run certificate's issued_at) plus cancel_propagation_s (the flow's,
+    else conformance.cancel_propagation_s). -> (children_ok, findings,
+    children): children_ok True | False | None (unchecked: a child's
+    certificate could not be found and no --runs-dir was given). A child
+    with termination expired | failed is not-terminated (B14 names
+    cancelled and completed only). One level deep; timing and termination
+    only — the grant is seen as a digest and never read."""
+    man = run_cert.get("manifest") or {}
+    children = man.get("children") or []
+    if man.get("termination") != "cancelled" or not children:
+        return None, [], []
+    parent_id = (run_cert.get("subject") or {}).get("run_id")
+    cancel_s = flow.cancel_propagation_s if flow.cancel_propagation_s is not None else float(cancel_propagation_default)
+    t0_text = man.get("terminated_at") or run_cert.get("issued_at")
+    from datetime import timedelta
+    deadline = _parse_ts(t0_text) + timedelta(seconds=cancel_s)
+    ok: bool | None = True
+    findings, rows = [], []
+
+    def finding(child_id, reason_class, reason):
+        findings.append({"code": "cancellation-not-propagated", "step": None, "attempt_id": None, "file": "run.dec.json",
+                         "reason": f"child run {child_id}: {reason} (parent cancelled at {t0_text}, cancel_propagation_s {cancel_s:g}; binding B14)",
+                         "reason_class": reason_class, "child_run_id": child_id})
+
+    for ch in children:
+        cid = ch.get("run_id")
+        row = {"run_id": cid, "task_grant_commitment": ch.get("task_grant_commitment"), "status": None, "termination": None,
+               "closed_at": None, "source": None}
+        hit = index.child_run_certificate(cid) if cid else None
+        if hit is None:
+            row["status"] = "certificate-not-found"
+            if index.runs_dirs:
+                ok = False
+                finding(cid, "certificate-not-found", "no run certificate under --dec-dir or --runs-dir (still open, or not supplied)")
+            else:
+                ok = None if ok is not False else False
+                row["status"] = "certificate-not-found (unchecked: no --runs-dir)"
+            rows.append(row)
+            continue
+        path, doc, where = hit
+        row["source"] = f"{where}:{path.name}"
+        signed = index._signed(path, doc, "keys") if index.resolve is not None else ("unverifiable", "no trust bundle")
+        if signed:
+            ok = False
+            row["status"] = "certificate-not-found"
+            finding(cid, "certificate-not-found", f"its run certificate does not verify ({signed[1]}); its termination is not evidence")
+            rows.append(row)
+            continue
+        term = (doc.get("manifest") or {}).get("termination")
+        closed_text = doc.get("issued_at")
+        row["termination"], row["closed_at"] = term, closed_text
+        if term not in ("cancelled", "completed"):
+            ok = False
+            row["status"] = "not-terminated"
+            finding(cid, "not-terminated", f"termination {term or 'unrecorded'} (needs cancelled | completed)")
+        elif _parse_ts(closed_text) > deadline:
+            ok = False
+            row["status"] = "late"
+            finding(cid, "late", f"closed ({term}) at {closed_text}, after the parent's cancellation plus the window")
+        else:
+            row["status"] = "within-window"
+        rows.append(row)
+    return ok, findings, rows
+
+
 # ----------------------------------------------------------------- evaluation
-def evaluate(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None = None) -> dict:
+def evaluate(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None = None, *,
+             cancel_propagation_default: float = 30.0) -> dict:
     declared = flow.step_ids
     observed = observed_steps(runs)
     absent = [s for s in declared if s not in observed]
@@ -402,23 +483,35 @@ def evaluate(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None
     attempts_by_step = {sid: {"runs_with_retries": 0, "max_attempts_seen": 0, "over_bound": 0, "unreconciled": 0} for sid in effect_steps}
     unchecked: dict[str, int] = {}          # rule -> span-sourced runs it could not be checked for
     verifier_unchecked: set[str] = set()
+    children_checked = children_unresolved = 0
+    children_unchecked = 0
     for trace_id in sorted(runs):
         run = runs[trace_id]
         cert = index.run_certificate_for(run) if index is not None else None
         notes: list[str] = []
         approximate = False
         findings: list[dict] = []
+        children: list[dict] = []
         if cert is not None:
             path, rc = cert
             man = rc.get("manifest") or {}
             realized = [_manifest_entry(m, index) for m in man.get("steps") or []]
             source = f"manifest:{path.name}"
             outcome, termination = man.get("outcome"), man.get("termination")
-            r = plan_reading(flow.doc, realized, outcome=outcome, termination=termination)
+            # [H3] cancellation propagation across runs (B14): the engine's own cross-run reading
+            children_ok, child_findings, children = cancellation_check(flow, rc, index, cancel_propagation_default=cancel_propagation_default)
+            children_checked += sum(1 for c in children if c["status"] in ("within-window", "not-terminated", "late"))
+            children_unresolved += sum(1 for c in children if c["status"] and c["status"].startswith("certificate-not-found"))
+            if children_ok is None and children:
+                children_unchecked += 1
+            r = plan_reading(flow.doc, realized, outcome=outcome, termination=termination, children_ok=children_ok)
+            findings += child_findings
             if effect_steps:
-                findings, vu, _ = _verifier_findings(index, index.run_directory(path), READ_FINDINGS)
-                verifier_unchecked.update(vu)
-                for f in findings:
+                vf, vu, _ = _verifier_findings(index, index.run_directory(path), READ_FINDINGS)
+                findings += vf
+                # the verifier's own children part (1d(c)) is superseded by the engine's reading above
+                verifier_unchecked.update(u for u in vu if "cancellation propagation" not in u)
+                for f in vf:
                     if f["code"] in DIVERGENT_FINDINGS:
                         r["divergent"].append(f"{f['code']}: {f['reason']}")
                 if r["divergent"] and r["reading"] != "failed-run":
@@ -466,15 +559,19 @@ def evaluate(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None
                         "outcome": outcome, "termination": termination,
                         "reading": r["reading"], "divergent": r["divergent"], "absent": r["absent"], "failed": r["failed"],
                         "degraded": degraded, "vetoed": bool(vetoed), "approximate": approximate,
-                        "findings": findings,
+                        "findings": findings, "children": children,
                         "notes": notes + list(r.get("notes") or [])})
     unchecked_lines = [f"{rule}: unchecked for {n} span-sourced run(s) (no certificates to read it from)" for rule, n in sorted(unchecked.items())]
+    if children_unchecked:
+        unchecked_lines.append(f"cancellation-not-propagated (B14): unchecked for {children_unchecked} cancelled parent run(s) whose "
+                               f"child certificate(s) were not found under --dec-dir and no --runs-dir was given")
     unchecked_lines += sorted(verifier_unchecked)
     return {
         "window": {"reading": window_reading, "declared": declared, "observed": sorted(observed),
                    "absent": absent, "divergent": divergent},
         "runs": per_run,
         "attempts": attempts_by_step,
+        "cross_run": {"children_checked": children_checked, "children_unresolved": children_unresolved},
         "summary": {"runs": len(runs), "by_reading": counts, "off_plan_steps": dict(sorted(off_plan.items())),
                     # runs with a divergent (off-plan, order, repeat, soft loop bound, latched re-entry, undeclared
                     # outcome or edge, or a step-1d finding) or failed (hard loop bound) reading

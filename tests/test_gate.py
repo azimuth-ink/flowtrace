@@ -20,7 +20,7 @@ def normalize(report: dict) -> dict:
     for k in ("flows_dir", "config", "alerts", "trust_bundle", "baseline", "methods", "approvals"):
         if r["inputs"].get(k):
             r["inputs"][k] = pathlib.Path(r["inputs"][k]).name
-    for k in ("telemetry", "queries", "dec_dirs", "assurance_telemetry"):
+    for k in ("telemetry", "queries", "dec_dirs", "assurance_telemetry", "runs_dirs"):
         r["inputs"][k] = [pathlib.Path(x).name for x in r["inputs"].get(k, [])]
     for f in r["flows"]:
         for st in (f.get("streams") or {}).values():

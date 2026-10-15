@@ -35,6 +35,7 @@
         "dec_dirs": { "type": "array", "items": { "type": "string" } },
         "methods": { "type": ["string", "null"], "description": "[H4] the method artifacts directory passed to agent-dec's verifier (ND0 replay) when it is called on a run directory." },
         "approvals": { "type": ["string", "null"], "description": "[H2] --approvals: the directory of human_approval attestations joined to dec.approval_digest and passed to the verifier; null = the approvals/ directory beside each run's chain." },
+        "runs_dirs": { "type": "array", "items": { "type": "string" }, "description": "[H3] --runs-dir: run certificates of runs outside the window, for children of cancelled parents (spec §7.7)." },
         "baseline": { "type": ["string", "null"] },
         "adapter": { "type": "string" },
         "dialects": { "type": "array", "items": { "type": "string" } }
@@ -124,7 +125,25 @@
               "attempt_id": { "type": ["integer", "null"] },
               "file": { "type": "string" },
               "reason": { "type": "string" },
-              "reason_class": { "enum": ["missing", "denied"], "description": "[H1] for effect-without-authorization (spec §7.6): a deny record followed by the certificate, or no accepted authorization before it." }
+              "reason_class": { "enum": ["missing", "denied", "not-terminated", "late", "certificate-not-found"], "description": "[H1] for effect-without-authorization (spec §7.6): a deny record followed by the certificate, or no accepted authorization before it; [H3] for cancellation-not-propagated (spec §7.7)." },
+              "child_run_id": { "type": ["string", "null"], "description": "[H3] the child run a cancellation-not-propagated finding names." }
+            }
+          }
+        },
+        "children": {
+          "type": "array",
+          "description": "[H3] for a cancelled parent, each child of its manifest with the B14 reading (spec §7.7).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["run_id", "task_grant_commitment", "status", "termination", "closed_at", "source"],
+            "properties": {
+              "run_id": { "type": ["string", "null"] },
+              "task_grant_commitment": { "type": ["string", "null"], "description": "seen as a digest only; never read" },
+              "status": { "type": ["string", "null"], "description": "within-window | not-terminated | late | certificate-not-found (| … unchecked: no --runs-dir)" },
+              "termination": { "type": ["string", "null"] },
+              "closed_at": { "type": ["string", "null"] },
+              "source": { "type": ["string", "null"], "description": "dec-dir:<file> | runs-dir:<file>" }
             }
           }
         },
@@ -405,6 +424,16 @@
               }
             },
             "runs": { "type": "array", "items": { "$ref": "#/$defs/runReading" } },
+            "cross_run": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "[H3] the cancellation-propagation reading across runs (spec §7.7).",
+              "required": ["children_checked", "children_unresolved"],
+              "properties": {
+                "children_checked": { "type": "integer", "minimum": 0, "description": "child runs whose certificate was found and read" },
+                "children_unresolved": { "type": "integer", "minimum": 0, "description": "child runs whose certificate was not found (unchecked without --runs-dir; the finding with it)" }
+              }
+            },
             "attempts": {
               "type": "object",
               "description": "[H4] per effect step (spec §7.5): attempts collapsed into the declared step.",

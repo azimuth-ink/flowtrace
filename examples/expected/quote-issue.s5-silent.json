@@ -304,12 +304,17 @@
       },
       "conformance": {
         "attempts": {},
+        "cross_run": {
+          "children_checked": 0,
+          "children_unresolved": 0
+        },
         "runs": [
           {
             "absent": [
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -341,6 +346,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -372,6 +378,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -403,6 +410,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -434,6 +442,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -465,6 +474,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -496,6 +506,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -527,6 +538,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -558,6 +570,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -589,6 +602,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -620,6 +634,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -651,6 +666,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -682,6 +698,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -713,6 +730,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -744,6 +762,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -775,6 +794,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -806,6 +826,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -837,6 +858,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -868,6 +890,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -897,6 +920,7 @@
           {
             "absent": [],
             "approximate": false,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -930,6 +954,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -961,6 +986,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -992,6 +1018,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -1023,6 +1050,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -1054,6 +1082,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -1085,6 +1114,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -1116,6 +1146,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -1147,6 +1178,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -1178,6 +1210,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -1209,6 +1242,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -1240,6 +1274,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -1271,6 +1306,7 @@
               "s5"
             ],
             "approximate": true,
+            "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
@@ -1744,6 +1780,7 @@
     "queries": [
       "quote-issue.queries.yaml"
     ],
+    "runs_dirs": [],
     "telemetry": [
       "quote-issue.s5-silent.otlp.jsonl"
     ],

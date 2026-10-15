@@ -450,7 +450,7 @@ class CertificateIndex:
 
     def __init__(self, dirs: Sequence[str | pathlib.Path], trust_bundle: str | pathlib.Path | None, *,
                  flows_dir: str | pathlib.Path | None = None, methods: str | pathlib.Path | None = None,
-                 approvals: str | pathlib.Path | None = None):
+                 approvals: str | pathlib.Path | None = None, runs_dirs: Sequence[str | pathlib.Path] = ()):
         try:
             from agent_dec import verify_dec as vd  # type: ignore
         except ImportError:
@@ -506,6 +506,17 @@ class CertificateIndex:
                 continue
             if isinstance(a, dict) and a.get("kind") == "attestation" and a.get("type") == "human_approval":
                 self.approvals[digest] = (p, a)
+        # [H3] run certificates of runs outside the window (--runs-dir, one or more): children of a cancelled parent
+        # are resolved by subject.run_id in --dec-dir first, then here (spec §7.7)
+        self.runs_dirs = [pathlib.Path(d) for d in runs_dirs]
+        self.outside_runs: dict[str, tuple[pathlib.Path, dict]] = {}
+        for d in self.runs_dirs:
+            try:
+                loaded = vd.load_runs_dir(d)
+            except SystemExit as e:                          # the verifier's helper refuses a non-directory
+                raise ValueError(str(e)) from None
+            for rid, hit in loaded.items():
+                self.outside_runs.setdefault(rid, hit)
         self.trust_bundle_path = pathlib.Path(trust_bundle) if trust_bundle else None
         self.bundle = vd.load_trust_bundle(self.trust_bundle_path) if trust_bundle else None
         self.resolve = vd.build_resolver(None, self.bundle) if self.bundle else None
@@ -535,7 +546,7 @@ class CertificateIndex:
         key = run_dir.resolve()
         if key not in self._verifier_cache:
             argv = verifier_argv(key, trust_bundle=self.trust_bundle_path, flows_dir=self.flows_dir, methods=self.methods,
-                                 approvals=self.approvals_dir, runs_dirs=[])
+                                 approvals=self.approvals_dir, runs_dirs=self.runs_dirs)
             self._verifier_cache[key] = run_verifier(key, argv)
         return self._verifier_cache[key]
 
@@ -704,6 +715,19 @@ class CertificateIndex:
         if bad and bad[0] != "run-binding-mismatch":
             return bad
         return str(doc.get("status")), (bad[1] if bad else None)
+
+    def child_run_certificate(self, run_id: str) -> tuple[pathlib.Path, dict, str] | None:
+        """[H3] a child run's certificate by subject.run_id: in --dec-dir (one
+        certificate claiming the id; several are ambiguous and count as not
+        found), then in --runs-dir. -> (path, doc, where) or None."""
+        cands = self.runs_by_run_id.get(run_id) or {}
+        if len(cands) == 1:
+            path, doc = next(iter(cands.values()))
+            return path, doc, "dec-dir"
+        hit = self.outside_runs.get(run_id)
+        if hit is not None:
+            return hit[0], hit[1], "runs-dir"
+        return None
 
     def run_certificate_for(self, run: Run) -> tuple[pathlib.Path, dict] | None:
         """The run certificate bound to this run (B3/B6): found through

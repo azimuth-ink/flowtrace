@@ -45,6 +45,7 @@ class GateInputs:
     dec_dirs: Sequence[str] = field(default_factory=list)
     methods: str | None = None                   # method artifacts for agent-dec's ND0 replay (default: methods/ in or beside a --dec-dir)
     approvals: str | None = None                 # [H2] human_approval attestations <sha256 hex>.json (default: approvals/ beside each run's chain)
+    runs_dirs: Sequence[str] = field(default_factory=list)   # [H3] run certificates of runs outside the window (children of cancelled parents)
     queries: Sequence[str] = field(default_factory=list)
     baseline: str | None = None
     execution_evidence: bool | None = None       # None = per config
@@ -88,6 +89,7 @@ READING_FINDING_CODES = (
     ("attempts-exceeded:", "attempts-over-bound"),                    # [H4] more attempts than attempts.max and no on_exceed absorbed it
     ("retry-without-reconciliation:", "retry-without-reconciliation"),  # [H4] binding B17, from agent-dec's step 1d
     ("effect-without-authorization:", "effect-without-authorization"),  # [H1] binding B10, from agent-dec's step 1d
+    ("cancellation-not-propagated:", "cancellation-not-propagated"),    # [H3] binding B14, the engine's cross-run reading
 )
 # Step-1d findings passed through from agent-dec's verifier as warn-class
 # findings on the flow (never re-derived): [H1] the authorization's validity
@@ -181,7 +183,8 @@ def evaluate_flow(flow: Flow, adapter, window: Window, cfg: dict, *, alerts, bin
                                  f"{len(spans_all) - len(spans)} span(s) carry flow.version in {other_versions}; evaluated {flow.version} only"))
 
     # --- conformance and the two-sided indicators (§7, §6.7) --------------------
-    conformance = evaluate_conformance(flow, runs, index)
+    conformance = evaluate_conformance(flow, runs, index,
+                                       cancel_propagation_default=float((cfg.get("conformance") or {}).get("cancel_propagation_s", 30)))
     slis = evaluate_slis(flow, conformance, cfg)
 
     # --- components -----------------------------------------------------------
@@ -334,7 +337,7 @@ def run_gate(inp: GateInputs) -> tuple[dict, int]:
     if not inp.telemetry:
         raise GateUsageError("at least one --telemetry file")
     for p in (list(inp.telemetry) + list(inp.assurance_telemetry) + [inp.alerts, inp.trust_bundle, inp.baseline, inp.methods, inp.approvals]
-              + list(inp.queries) + list(inp.dec_dirs)):
+              + list(inp.queries) + list(inp.dec_dirs) + list(inp.runs_dirs)):
         if p and not pathlib.Path(p).exists():
             raise GateUsageError(f"not found: {p}")
     try:
@@ -364,7 +367,11 @@ def run_gate(inp: GateInputs) -> tuple[dict, int]:
                           [_rel(t, inp.reproducible) for t in inp.telemetry], [_rel(t, inp.reproducible) for t in inp.telemetry])
     alerts = load_alerts(inp.alerts) if inp.alerts else None
     bindings = load_query_bindings(inp.queries) if inp.queries else []
-    index = (CertificateIndex(inp.dec_dirs, inp.trust_bundle, flows_dir=inp.flows, methods=inp.methods, approvals=inp.approvals)
+    for d in inp.runs_dirs:
+        if not pathlib.Path(d).is_dir():
+            raise GateUsageError(f"--runs-dir is not a directory: {d}")
+    index = (CertificateIndex(inp.dec_dirs, inp.trust_bundle, flows_dir=inp.flows, methods=inp.methods, approvals=inp.approvals,
+                              runs_dirs=inp.runs_dirs)
              if (inp.dec_dirs or inp.trust_bundle) else None)
     baseline = json.loads(pathlib.Path(inp.baseline).read_text(encoding="utf-8")) if inp.baseline else None
     base_flows = {f["id"]: f for f in (baseline or {}).get("flows", [])}
@@ -391,6 +398,7 @@ def run_gate(inp: GateInputs) -> tuple[dict, int]:
             "dec_dirs": [_rel(d, inp.reproducible) for d in inp.dec_dirs],
             "methods": _rel(str(index.methods), inp.reproducible) if (index is not None and index.methods) else None,
             "approvals": _rel(inp.approvals, inp.reproducible),
+            "runs_dirs": [_rel(d, inp.reproducible) for d in inp.runs_dirs],
             "baseline": _rel(inp.baseline, inp.reproducible),
             "adapter": adapter.name,
             "dialects": sorted(adapter.dialects),

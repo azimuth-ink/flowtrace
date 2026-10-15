@@ -96,6 +96,15 @@ slis:
     flows: {}
 
 # ---------------------------------------------------------------------------
+# FTC §4.8 (revision 2026-10-11) — cancellation propagation across runs
+# (binding B14; spec §7.7): a cancelled parent's child runs must be recorded
+# cancelled | completed within cancel_propagation_s of the parent's
+# cancellation. The flow's own `spec.cancel_propagation_s` wins; this default
+# applies only to a flow that declares none.
+conformance:
+  cancel_propagation_s: 30
+
+# ---------------------------------------------------------------------------
 # FTC §4.5 cost attribution — a step is attributable when its boundary spans
 # carry any of these attributes (cost/usage ledger columns are a later adapter).
 cost:
