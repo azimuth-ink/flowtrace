@@ -69,6 +69,13 @@ class Flow:
         return [s["id"] for s in self.steps if s.get("nd_class") in REPLAYABLE_ND_CLASSES]
 
     @property
+    def effect_steps(self) -> list[str]:
+        """Steps declared `effect: true` (revision 2026-10-11): their repeated
+        executions are attempts (spec §7.5) and their spans carry the
+        authorization / completion digests (§6.6)."""
+        return [s["id"] for s in self.steps if s.get("effect") is True]
+
+    @property
     def has_answerability_block(self) -> bool:
         return any(k in s for s in self.steps for k in ("slo", "required_telemetry", "debug_scenarios"))
 

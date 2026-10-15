@@ -43,6 +43,7 @@ class GateInputs:
     alerts: str | None = None
     trust_bundle: str | None = None
     dec_dirs: Sequence[str] = field(default_factory=list)
+    methods: str | None = None                   # method artifacts for agent-dec's ND0 replay (default: methods/ in or beside a --dec-dir)
     queries: Sequence[str] = field(default_factory=list)
     baseline: str | None = None
     execution_evidence: bool | None = None       # None = per config
@@ -81,6 +82,8 @@ READING_FINDING_CODES = (
     ("latched re-entry:", "latched-reentry"),                         # [D11]
     ("outcome:", "undeclared-outcome"),                               # [D11]
     ("degradation:", "undeclared-edge"),                              # [D11]
+    ("attempts-exceeded:", "attempts-over-bound"),                    # [H4] more attempts than attempts.max and no on_exceed absorbed it
+    ("retry-without-reconciliation:", "retry-without-reconciliation"),  # [H4] binding B17, from agent-dec's step 1d
 )
 
 
@@ -223,7 +226,7 @@ def run_gate(inp: GateInputs) -> tuple[dict, int]:
         raise GateUsageError("execution evidence is enabled: pass --trust-bundle and --dec-dir (or disable scoring.execution_evidence)")
     if not inp.telemetry:
         raise GateUsageError("at least one --telemetry file")
-    for p in list(inp.telemetry) + [inp.alerts, inp.trust_bundle, inp.baseline] + list(inp.queries) + list(inp.dec_dirs):
+    for p in list(inp.telemetry) + [inp.alerts, inp.trust_bundle, inp.baseline, inp.methods] + list(inp.queries) + list(inp.dec_dirs):
         if p and not pathlib.Path(p).exists():
             raise GateUsageError(f"not found: {p}")
     try:
@@ -234,7 +237,8 @@ def run_gate(inp: GateInputs) -> tuple[dict, int]:
     window = adapter.extent()
     alerts = load_alerts(inp.alerts) if inp.alerts else None
     bindings = load_query_bindings(inp.queries) if inp.queries else []
-    index = CertificateIndex(inp.dec_dirs, inp.trust_bundle) if (inp.dec_dirs or inp.trust_bundle) else None
+    index = (CertificateIndex(inp.dec_dirs, inp.trust_bundle, flows_dir=inp.flows, methods=inp.methods)
+             if (inp.dec_dirs or inp.trust_bundle) else None)
     sampling = float(inp.sampling_rate if inp.sampling_rate is not None else cfg["telemetry"].get("assumed_sampling_rate", 1.0))
     baseline = json.loads(pathlib.Path(inp.baseline).read_text(encoding="utf-8")) if inp.baseline else None
     base_flows = {f["id"]: f for f in (baseline or {}).get("flows", [])}
@@ -257,6 +261,7 @@ def run_gate(inp: GateInputs) -> tuple[dict, int]:
             "queries": [_rel(q, inp.reproducible) for q in inp.queries],
             "trust_bundle": _rel(inp.trust_bundle, inp.reproducible),
             "dec_dirs": [_rel(d, inp.reproducible) for d in inp.dec_dirs],
+            "methods": _rel(str(index.methods), inp.reproducible) if (index is not None and index.methods) else None,
             "baseline": _rel(inp.baseline, inp.reproducible),
             "adapter": adapter.name,
             "dialects": sorted(adapter.dialects),

@@ -368,21 +368,31 @@ def evaluate_cost_attribution(flow: Flow, runs: Mapping[str, Run], cost_attribut
 class CertificateIndex:
     """Step and run certificates under one or more directories, indexed by
     their JCS-canonical sha256 digest (agent-dec's cert_digest) — the value
-    a span carries as dec.step_cert_digest / dec.run_cert_digest."""
+    a span carries as dec.step_cert_digest / dec.run_cert_digest. Revision
+    2026-10-11: the evidence artifacts (`kind: authorization | completion`)
+    and `human_approval` attestations are indexed the same way (the values
+    of dec.authz_cert_digest / dec.completion_cert_digest /
+    dec.approval_digest), members are also indexed by path, and the step-1d
+    readings of a run directory are taken from agent-dec's verifier through
+    `verifier_result()` (flowtrace.evidence)."""
 
-    def __init__(self, dirs: Sequence[str | pathlib.Path], trust_bundle: str | pathlib.Path | None):
+    def __init__(self, dirs: Sequence[str | pathlib.Path], trust_bundle: str | pathlib.Path | None, *,
+                 flows_dir: str | pathlib.Path | None = None, methods: str | pathlib.Path | None = None):
         try:
             from agent_dec import verify_dec as vd  # type: ignore
         except ImportError:
             raise RuntimeError("execution evidence requires agent-dec (pip install 'flowtrace[companions]')") from None
         self.vd = vd
+        self.dirs = [pathlib.Path(d) for d in dirs]
         self.steps: dict[str, tuple[pathlib.Path, dict]] = {}
         self.runs: dict[str, tuple[pathlib.Path, dict]] = {}
         self.runs_by_run_id: dict[str, dict[str, tuple[pathlib.Path, dict]]] = {}   # run_id -> {digest: (path, cert)}
+        self.authorizations: dict[str, tuple[pathlib.Path, dict]] = {}
+        self.completions: dict[str, tuple[pathlib.Path, dict]] = {}
+        self.by_path: dict[pathlib.Path, tuple[str, dict]] = {}                         # member path -> (digest, doc)
         self.errors: list[str] = []
         self.run_binding_notes: list[str] = []
-        for d in dirs:
-            root = pathlib.Path(d)
+        for root in self.dirs:
             for p in sorted(root.rglob("*.dec.json")):
                 try:
                     c = json.loads(p.read_text(encoding="utf-8"))
@@ -390,15 +400,58 @@ class CertificateIndex:
                 except (ValueError, TypeError) as e:
                     self.errors.append(f"{p}: unreadable ({str(e)[:60]})")
                     continue
-                if c.get("kind") == "run":
+                if not isinstance(c, dict):
+                    self.errors.append(f"{p}: not a certificate document")
+                    continue
+                self.by_path[p.resolve()] = (digest, c)
+                kind = c.get("kind")
+                if kind == "run":
                     self.runs[digest] = (p, c)
                     rid = (c.get("subject") or {}).get("run_id")
                     if rid:
                         self.runs_by_run_id.setdefault(rid, {})[digest] = (p, c)
-                else:
+                elif kind == "authorization":
+                    self.authorizations[digest] = (p, c)
+                elif kind == "completion":
+                    self.completions[digest] = (p, c)
+                elif kind is None:                       # a step certificate (an ND2/ND3 one is the step's attestation)
                     self.steps[digest] = (p, c)
-        self.bundle = vd.load_trust_bundle(pathlib.Path(trust_bundle)) if trust_bundle else None
+        self.trust_bundle_path = pathlib.Path(trust_bundle) if trust_bundle else None
+        self.bundle = vd.load_trust_bundle(self.trust_bundle_path) if trust_bundle else None
         self.resolve = vd.build_resolver(None, self.bundle) if self.bundle else None
+        self.flows_dir = pathlib.Path(flows_dir) if flows_dir else None
+        self.methods = pathlib.Path(methods) if methods else self._find_methods()
+        self._verifier_cache: dict[pathlib.Path, Any] = {}
+
+    def _find_methods(self) -> pathlib.Path | None:
+        """The method artifacts agent-dec's ND0 replay needs: `methods/` in a
+        --dec-dir or beside it (the installed verifier's own default is
+        relative to its package and does not exist outside a checkout)."""
+        for root in self.dirs:
+            for cand in (root / "methods", root.parent / "methods"):
+                if cand.is_dir():
+                    return cand
+        return None
+
+    def run_directory(self, path: pathlib.Path) -> pathlib.Path:
+        """The run directory a chain member belongs to (the directory holding
+        its run.dec.json: the member's own directory)."""
+        return path.resolve().parent
+
+    def verifier_result(self, run_dir: pathlib.Path):
+        """agent-dec's verifier over one run directory (cached): the step-1d
+        findings, notes, failures and UNCHECKED parts (flowtrace.evidence)."""
+        from .evidence import run_verifier, verifier_argv
+        key = run_dir.resolve()
+        if key not in self._verifier_cache:
+            argv = verifier_argv(key, trust_bundle=self.trust_bundle_path, flows_dir=self.flows_dir, methods=self.methods,
+                                 approvals=None, runs_dirs=[])
+            self._verifier_cache[key] = run_verifier(key, argv)
+        return self._verifier_cache[key]
+
+    def member(self, path: pathlib.Path) -> dict | None:
+        hit = self.by_path.get(path.resolve())
+        return hit[1] if hit else None
 
     def verify_step_digest(self, digest: str, span: SpanRow) -> tuple[str, str | None]:
         """-> (status, reason): verified | certificate-not-found | signature-invalid |

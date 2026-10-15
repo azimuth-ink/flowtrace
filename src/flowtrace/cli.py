@@ -26,7 +26,7 @@ def _add_common(ap: argparse.ArgumentParser) -> None:
 def cmd_gate(args) -> int:
     from .gate import GateInputs, GateUsageError, format_summary, run_gate
     inp = GateInputs(flows=args.flows, telemetry=args.telemetry, config=args.config, alerts=args.alerts,
-                     trust_bundle=args.trust_bundle, dec_dirs=args.dec_dir or [], queries=args.queries or [],
+                     trust_bundle=args.trust_bundle, dec_dirs=args.dec_dir or [], methods=args.methods, queries=args.queries or [],
                      baseline=args.baseline, execution_evidence=(True if args.execution_evidence else None),
                      sampling_rate=args.sampling_rate, reproducible=args.reproducible, registry=args.registry,
                      adapter=args.adapter, out=args.out, strict_flows=args.strict)
@@ -94,7 +94,7 @@ def cmd_conformance(args) -> int:
         print(f"error: {e}", file=sys.stderr)
         return 2
     adapter = load_adapter(args.adapter, args.telemetry, accept_deprecated_aliases=True)
-    index = CertificateIndex(args.dec_dir, args.trust_bundle) if args.dec_dir else None
+    index = CertificateIndex(args.dec_dir, args.trust_bundle, flows_dir=args.flows, methods=args.methods) if args.dec_dir else None
     rc = 0
     for f in flows:
         spans = [s for s in adapter.list_spans(f.id, adapter.extent()) if s.attributes.get("flow.version") == f.version]
@@ -143,6 +143,8 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--queries", action="append", help="query bindings (flowtrace.queries/v0.1); repeatable")
     g.add_argument("--trust-bundle", help="dec-trust/0.x bundle for execution evidence (B7)")
     g.add_argument("--dec-dir", action="append", help="directory of DEC certificates (*.dec.json), searched recursively; repeatable")
+    g.add_argument("--methods", help="method artifacts for agent-dec's ND0 replay when its verifier is called on a run directory "
+                                     "(default: methods/ in or beside a --dec-dir)")
     g.add_argument("--baseline", help="a previous coverage-report.json to print deltas against")
     g.add_argument("--execution-evidence", action="store_true", help="enable the execution-evidence component (also scoring.execution_evidence.enabled)")
     g.add_argument("--sampling-rate", type=float, help="effective trace sampling rate of the export (default: config telemetry.assumed_sampling_rate)")
@@ -172,6 +174,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common(c)
     c.add_argument("--dec-dir", action="append", help="run certificates: the manifest is the realized DAG (B6)")
     c.add_argument("--trust-bundle")
+    c.add_argument("--methods", help="method artifacts for agent-dec's ND0 replay (default: methods/ in or beside a --dec-dir)")
     c.add_argument("--adapter", default="otlp_duckdb")
     c.add_argument("--require-convergent", action="store_true", help="exit 1 unless every reading is convergent")
     c.set_defaults(func=cmd_conformance)

@@ -282,8 +282,33 @@ def _gate_authority_reason(step: Mapping[str, Any], outcome: str) -> str | None:
 
 
 def _attempt_rules(entries, kinds, by_id, outcome, degraded, divergent, exits) -> None:
-    """Attempts of an effect step against `attempts.max` (spec §7.5; unit H4)."""
-    return None
+    """Attempts of an effect step against `attempts.max` (spec §7.5): more
+    attempts than the bound is the step's `on_exceed` taken (convergent when
+    the run ended in the declared outcome, or continued at the declared step
+    via on_fail), else divergent (`attempts-exceeded`). Bindings B10/B17 are
+    the verifier's step 1d; here only the count is read."""
+    for i, e in enumerate(entries):
+        fs = e["flow_step"]
+        if fs not in kinds or e["attempts"] < 1:
+            continue
+        attempts = by_id[fs].get("attempts") if isinstance(by_id[fs].get("attempts"), dict) else None
+        mx = attempts.get("max") if attempts else None
+        if isinstance(mx, int) and e["attempts"] > mx:
+            kind, value = degradation_target(attempts.get("on_exceed"))
+            if kind == "outcome":
+                if outcome == value and (i == len(entries) - 1 or all(x["flow_step"] not in kinds for x in entries[i + 1:])):
+                    degraded.append(f"{fs} -> outcome {value} (attempts.on_exceed after {e['attempts']} attempts)")
+                    exits.append((fs, "attempts.on_exceed"))
+                else:
+                    divergent.append(f"attempts-exceeded: {fs} ran {e['attempts']} attempts > attempts.max {mx} and the run "
+                                     f"did not end in the declared on_exceed outcome {value} (outcome: {outcome})")
+            elif kind == "to":
+                nxt = entries[i + 1] if i + 1 < len(entries) else None
+                if not (nxt and nxt["flow_step"] == value and nxt["via"] == "on_fail"):
+                    divergent.append(f"attempts-exceeded: {fs} ran {e['attempts']} attempts > attempts.max {mx} and the run "
+                                     f"did not continue at the declared on_exceed step {value} via on_fail")
+            else:
+                divergent.append(f"attempts-exceeded: {fs} ran {e['attempts']} attempts > attempts.max {mx} (no on_exceed declared)")
 
 
 def plan_reading(doc: Mapping[str, Any], realized: Sequence, **kw) -> dict:
@@ -305,7 +330,13 @@ def _realized_from_spans(flow: Flow, run: Run) -> tuple[list[dict], str | None, 
     (entries, outcome the run is read as ending in | None, notes)."""
     entries, notes = [], []
     prev = None
+    effect = set(flow.effect_steps)
     for sid, _ in run.realized():
+        if sid in effect and prev == sid:
+            # repeated boundary spans of an effect step are its attempts (spec §7.5): collapsed by the reading
+            attempt = (entries[-1]["attempt"] or 1) + 1
+            entries.append({"step_id": sid, "flow_step": sid, "via": "primary", "key": f"spans:{sid}", "attempt": attempt})
+            continue
         via = "primary"
         if prev is not None:
             step = flow.step(prev)
@@ -316,13 +347,24 @@ def _realized_from_spans(flow: Flow, run: Run) -> tuple[list[dict], str | None, 
                                  f"target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)")
                 else:
                     via = "on_fail"
-        entries.append({"step_id": sid, "flow_step": sid, "via": via, "key": None, "attempt": None})
+        entries.append({"step_id": sid, "flow_step": sid, "via": via,
+                        "key": f"spans:{sid}" if sid in effect else None, "attempt": 1 if sid in effect else None})
         prev = sid
     ending_outcome = None
     if entries:
-        last_step = flow.step(entries[-1]["flow_step"]) or {}
+        last_id = entries[-1]["flow_step"]
+        last_step = flow.step(last_id) or {}
+        trailing = 0
+        for e in reversed(entries):
+            if e["flow_step"] != last_id:
+                break
+            trailing += 1
+        attempts = last_step.get("attempts") if isinstance(last_step.get("attempts"), dict) else {}
+        over_bound = last_id in effect and isinstance(attempts.get("max"), int) and trailing > attempts["max"]
         for field_name, kind, value, _ in degradation_edges(last_step):
-            if field_name == "on_fail" and kind == "outcome":
+            if kind != "outcome":
+                continue
+            if field_name == "on_fail" or (field_name == "attempts.on_exceed" and over_bound):
                 ending_outcome = value          # the run ends at the source step; its successors are not absent
                 break
     return entries, ending_outcome, notes
@@ -343,11 +385,16 @@ def evaluate(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None
         index.run_binding_notes.clear()
     off_plan: dict[str, int] = {}
     degraded_runs = vetoed_runs = 0
+    effect_steps = flow.effect_steps
+    attempts_by_step = {sid: {"runs_with_retries": 0, "max_attempts_seen": 0, "over_bound": 0, "unreconciled": 0} for sid in effect_steps}
+    unchecked: dict[str, int] = {}          # rule -> span-sourced runs it could not be checked for
+    verifier_unchecked: set[str] = set()
     for trace_id in sorted(runs):
         run = runs[trace_id]
         cert = index.run_certificate_for(run) if index is not None else None
         notes: list[str] = []
         approximate = False
+        findings: list[dict] = []
         if cert is not None:
             path, rc = cert
             man = rc.get("manifest") or {}
@@ -355,6 +402,14 @@ def evaluate(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None
             source = f"manifest:{path.name}"
             outcome, termination = man.get("outcome"), man.get("termination")
             r = plan_reading(flow.doc, realized, outcome=outcome, termination=termination)
+            if effect_steps:
+                findings, vu, _ = _verifier_findings(index, index.run_directory(path), READ_FINDINGS)
+                verifier_unchecked.update(vu)
+                for f in findings:
+                    if f["code"] in DIVERGENT_FINDINGS:
+                        r["divergent"].append(f"{f['code']}: {f['reason']}")
+                if r["divergent"] and r["reading"] != "failed-run":
+                    r["reading"] = "divergent"
         else:
             realized, ending, notes = _realized_from_spans(flow, run)
             source = "spans"
@@ -365,6 +420,21 @@ def evaluate(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None
                 # the engine cannot see the outcome; the run is read as ending at the source step (spec §7.4)
                 outcome = "unknown"
                 r["degraded"] = [d + " [spans]" for d in r["degraded"]]
+        entries = r.get("entries") or _collapse_attempts(_entries(realized))
+        for e in entries:
+            sid = e["flow_step"]
+            if sid in attempts_by_step:
+                st = attempts_by_step[sid]
+                st["max_attempts_seen"] = max(st["max_attempts_seen"], e["attempts"])
+                if e["attempts"] > 1:
+                    st["runs_with_retries"] += 1
+                    if cert is None:
+                        unchecked["retry-without-reconciliation (B17)"] = unchecked.get("retry-without-reconciliation (B17)", 0) + 1
+                if any(d.startswith(f"attempts-exceeded: {sid} ") for d in r["divergent"]):
+                    st["over_bound"] += 1
+        for f in findings:
+            if f["code"] == "retry-without-reconciliation" and f["step"] in attempts_by_step:
+                attempts_by_step[f["step"]]["unreconciled"] += 1
         counts[r["reading"]] = counts.get(r["reading"], 0) + 1
         for d in r["divergent"]:
             if d.startswith("off-plan: "):
@@ -374,31 +444,63 @@ def evaluate(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None
         vetoed = (outcome == "block") if cert is not None else (ending == "block" if approximate else False)
         degraded_runs += bool(degraded)
         vetoed_runs += bool(vetoed)
-        entries = r.get("entries") or _collapse_attempts(_entries(realized))
         per_run.append({"trace_id": trace_id, "source": source,
                         "realized": [_entry_text(e) for e in entries],
                         "via": [e["via"] for e in entries],
                         "outcome": outcome, "termination": termination,
                         "reading": r["reading"], "divergent": r["divergent"], "absent": r["absent"], "failed": r["failed"],
                         "degraded": degraded, "vetoed": bool(vetoed), "approximate": approximate,
+                        "findings": findings,
                         "notes": notes + list(r.get("notes") or [])})
+    unchecked_lines = [f"{rule}: unchecked for {n} span-sourced run(s) (no certificates to read it from)" for rule, n in sorted(unchecked.items())]
+    unchecked_lines += sorted(verifier_unchecked)
     return {
         "window": {"reading": window_reading, "declared": declared, "observed": sorted(observed),
                    "absent": absent, "divergent": divergent},
         "runs": per_run,
+        "attempts": attempts_by_step,
         "summary": {"runs": len(runs), "by_reading": counts, "off_plan_steps": dict(sorted(off_plan.items())),
                     # runs with a divergent (off-plan, order, repeat, soft loop bound, latched re-entry, undeclared
-                    # outcome or edge) or failed (hard loop bound) reading
+                    # outcome or edge, or a step-1d finding) or failed (hard loop bound) reading
                     "non_convergent_runs": counts.get("divergent", 0) + counts.get("failed-run", 0),
                     "degraded_runs": degraded_runs, "vetoed_runs": vetoed_runs,
                     "manifest_runs": sum(1 for r in per_run if r["source"] != "spans"),
-                    "unchecked": [],
+                    "unchecked": unchecked_lines,
                     "notes": list(index.run_binding_notes) if index is not None else []},
     }
 
 
+# The step-1d findings this unit reads from agent-dec's verifier (spec §7.5):
+# binding B17, reconciliation before retry. Later units extend the tuple.
+READ_FINDINGS = ("retry-without-reconciliation",)
+DIVERGENT_FINDINGS = ("retry-without-reconciliation",)
+
+
 def _manifest_entry(m: Mapping[str, Any], index: CertificateIndex | None) -> dict:
-    return {"step_id": m.get("step_id"), "flow_step": m.get("flow_step"), "via": m.get("via"), "key": None, "attempt": None}
+    """A manifest entry as a reading entry; the idempotency key commitment and
+    attempt id come from the step certificate the entry's cert_digest names
+    (attempts collapse on them, spec §7.5)."""
+    key = attempt = None
+    hit = index.steps.get(m.get("cert_digest")) if index is not None else None
+    if hit is not None:
+        subj = hit[1].get("subject") or {}
+        key, attempt = subj.get("idempotency_key_commitment"), subj.get("attempt_id")
+    return {"step_id": m.get("step_id"), "flow_step": m.get("flow_step"), "via": m.get("via"), "key": key, "attempt": attempt}
+
+
+def _verifier_findings(index: CertificateIndex, run_dir, codes: Sequence[str]) -> tuple[list[dict], list[str], object]:
+    """The step-1d findings of a run directory, taken from agent-dec's
+    verifier, restricted to `codes`: [{code, step, attempt_id, file, reason}],
+    the parts it reported UNCHECKED, and the verifier result itself."""
+    vr = index.verifier_result(run_dir)
+    out = []
+    for name, file_name, reason in vr.findings:
+        if name not in codes:
+            continue
+        doc = index.member(run_dir / file_name) or {}
+        subj = doc.get("subject") or {}
+        out.append({"code": name, "step": subj.get("step_id"), "attempt_id": subj.get("attempt_id"), "file": file_name, "reason": reason})
+    return out, list(vr.unchecked), vr
 
 
 def _entry_text(e: Mapping[str, Any]) -> str:

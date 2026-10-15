@@ -31,6 +31,7 @@
         "queries": { "type": "array", "items": { "type": "string" } },
         "trust_bundle": { "type": ["string", "null"] },
         "dec_dirs": { "type": "array", "items": { "type": "string" } },
+        "methods": { "type": ["string", "null"], "description": "[H4] the method artifacts directory passed to agent-dec's verifier (ND0 replay) when it is called on a run directory." },
         "baseline": { "type": ["string", "null"] },
         "adapter": { "type": "string" },
         "dialects": { "type": "array", "items": { "type": "string" } }
@@ -94,6 +95,22 @@
         "degraded": { "type": "array", "items": { "type": "string" }, "description": "[D11] the declared degradation paths the run took (convergent by declaration)." },
         "vetoed": { "type": "boolean", "description": "[D11] the run's outcome is block (manifest), or the run is read from spans as ending at a step whose on_fail outcome is block." },
         "approximate": { "type": "boolean", "description": "[D11] true when the reading comes from spans alone (spec §6.7)." },
+        "findings": {
+          "type": "array",
+          "description": "[H4] [H1] [H2] [H3] the step-1d findings agent-dec's verifier attributed to this run's chain members (spec §7.5–§7.7); the divergent ones are repeated in `divergent`.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "step", "attempt_id", "file", "reason"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "step": { "type": ["string", "null"] },
+              "attempt_id": { "type": ["integer", "null"] },
+              "file": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
         "notes": { "type": "array", "items": { "type": "string" } }
       }
     },
@@ -313,6 +330,21 @@
               }
             },
             "runs": { "type": "array", "items": { "$ref": "#/$defs/runReading" } },
+            "attempts": {
+              "type": "object",
+              "description": "[H4] per effect step (spec §7.5): attempts collapsed into the declared step.",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["runs_with_retries", "max_attempts_seen", "over_bound", "unreconciled"],
+                "properties": {
+                  "runs_with_retries": { "type": "integer", "minimum": 0 },
+                  "max_attempts_seen": { "type": "integer", "minimum": 0 },
+                  "over_bound": { "type": "integer", "minimum": 0, "description": "runs with more attempts than attempts.max that no on_exceed absorbed" },
+                  "unreconciled": { "type": "integer", "minimum": 0, "description": "runs with a retry-without-reconciliation finding (B17, from agent-dec's step 1d)" }
+                }
+              }
+            },
             "summary": {
               "type": "object",
               "required": ["runs", "by_reading", "off_plan_steps", "non_convergent_runs"],

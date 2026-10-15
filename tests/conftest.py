@@ -48,6 +48,50 @@ def telemetry(window: str) -> pathlib.Path:
     return TELEMETRY / f"quote-issue.{window}.otlp.jsonl"
 
 
+def w3_dec() -> pathlib.Path | None:
+    """The signed example set of the revision of 2026-10-11 (the flow-bound
+    run with its s6 evidence, the variants, the cancelled pair, the
+    negatives): examples/dec/flow-bound once vendored, else the agent-dec
+    checkout beside this repository, else None (tests skip)."""
+    if (DEC_DIR / "authorization-s6.dec.json").exists():
+        return DEC_DIR
+    sib = sibling("agent-dec")
+    if sib is not None and (sib / "examples" / "flow-bound" / "authorization-s6.dec.json").exists():
+        return sib / "examples" / "flow-bound"
+    return None
+
+
+def w3_trust_bundle() -> pathlib.Path | None:
+    root = w3_dec()
+    if root is None:
+        return None
+    for cand in (root.parent / "trust-bundle.json", root.parent.parent / "trust-bundle.json"):
+        if cand.exists():
+            return cand
+    return None
+
+
+def w3_flows() -> pathlib.Path | None:
+    """A directory holding the quote-issue 2.1.0 descriptor: examples/flows
+    once re-spliced, else the example set's own flows/ directory."""
+    import yaml
+    doc = yaml.safe_load(CANON.read_text(encoding="utf-8"))
+    if str(doc["metadata"]["version"]) == "2.1.0":
+        return FLOWS
+    root = w3_dec()
+    return (root / "flows") if root is not None and (root / "flows").is_dir() else None
+
+
+def w3_methods() -> pathlib.Path | None:
+    root = w3_dec()
+    if root is None:
+        return None
+    for cand in (root.parent / "methods", root.parent.parent / "methods"):
+        if cand.is_dir():
+            return cand
+    return None
+
+
 @pytest.fixture(scope="session")
 def cfg():
     from flowtrace.config import load_config
