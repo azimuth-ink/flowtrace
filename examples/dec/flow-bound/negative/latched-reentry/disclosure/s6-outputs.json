@@ -1,0 +1,10 @@
+{
+  "payload": {
+    "envelope": {
+      "channel": "email",
+      "document_id": "none",
+      "to": "cust-4471"
+    }
+  },
+  "salt": "9d701de1175e7490b4ce5dc7111f1899"
+}

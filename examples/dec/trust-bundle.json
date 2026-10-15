@@ -1,21 +1,35 @@
 {
+  "approvers": [
+    {
+      "alg": "Ed25519",
+      "id": "approver:a.example",
+      "key_id": "a-2026-10",
+      "not_before": "2026-10-15T07:17:28Z",
+      "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA0vHoS4kMLTsBbVu8ijQq6vASbU1tw3Pgp8X8paBw8X8=\n-----END PUBLIC KEY-----\n",
+      "status": "active"
+    }
+  ],
   "format": "dec-trust/0.2",
   "issuer": {
     "id": "operator.example"
   },
   "keys": [
     {
-      "key_id": "k-2026-10",
       "alg": "Ed25519",
-      "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAVR3VYXHxm1GZDu31lHCStPACxkBWW/sCejyYxMykmv4=\n-----END PUBLIC KEY-----\n",
-      "not_before": "2026-10-01T00:00:00Z",
+      "key_id": "k-2026-10",
+      "not_before": "2026-10-15T07:17:28Z",
+      "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAHbInUAcLS9wytbF43cZox6zgD33+Fz8oYC7cp2Q548U=\n-----END PUBLIC KEY-----\n",
       "status": "active"
     }
   ],
-  "flow_registries": [
+  "policy_authorities": [
     {
-      "id": "flows.flowtrace.example",
-      "ref": "../flows/"
+      "alg": "Ed25519",
+      "id": "policy.operator.example",
+      "key_id": "p-2026-10",
+      "not_before": "2026-10-15T07:17:28Z",
+      "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAg1i54rcLOofKmBpanJ/YLtqlq5EH3CYuOIUpKopK4Og=\n-----END PUBLIC KEY-----\n",
+      "status": "active"
     }
   ]
 }

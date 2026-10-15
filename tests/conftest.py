@@ -23,10 +23,14 @@ ALERTS = EXAMPLES / "alerts.yaml"
 QUERIES = EXAMPLES / "queries" / "quote-issue.queries.yaml"
 TRUST_BUNDLE = DEC / "trust-bundle.json"
 DEC_DIR = DEC / "flow-bound"
-WINDOWS = ("full", "s5-silent", "s4-missing-attr")
+PASSING_WINDOWS = ("full", "s5-degraded", "s6-unknown-reconciled")
+FAILING_WINDOWS = ("s5-silent", "s4-missing-attr", "s6-retry-unreconciled", "cancelled-child-late")
+WINDOWS = PASSING_WINDOWS + FAILING_WINDOWS
 
-# sha256 of the canonical quote-issue v0.2 descriptor (canon §3; same constant as polydiagram's test)
-CANON_SHA256 = "adff7b89ab89311ef0e6f110a7125ec4d9317cdd296a928fea04aaef7d71fe91"
+# sha256 of the canonical quote-issue 2.1.0 descriptor (canon §7.1; the same constant as polydiagram's and agent-dec's tests)
+CANON_SHA256 = "bcbf43158c31ab7b5ca5dde55de1fe48c81891eacc05def4f1d188a49beb148b"
+# the signed §4.4 run the full / s5-silent / s4-missing-attr windows are built on (examples/dec/flow-bound)
+CERTIFIED_RUN = "5c7cd4e0ca5f44d0f0a85af952bff581"
 
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))

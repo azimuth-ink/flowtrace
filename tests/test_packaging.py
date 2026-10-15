@@ -33,7 +33,7 @@ def test_pins_recorded_consistently():
         assert f"git+https://github.com/{ref}" in py, ref
         assert ref in readme, ref
         assert sha in wf, ref
-    assert "azimuth-ink/agent-dec\n#   pin:        e8075f9" in (REPO / "examples" / "dec" / "SOURCE").read_text()
+    assert "azimuth-ink/agent-dec\n#   pin:        05874ca" in (REPO / "examples" / "dec" / "SOURCE").read_text()
 
 
 def test_installed_package_finds_schemas_and_defaults():

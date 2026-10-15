@@ -1,0 +1,52 @@
+{
+  "chain": {
+    "position": 4,
+    "prev": "sha256:7af9b3ec0e6d1dff29e8520f2332955a2152d055e9e797415dc3d80c4b9692f3"
+  },
+  "dec_version": "0.2",
+  "environment": {
+    "image_digest": "sha256:7ba451133c403e85ee98073f28fd640bc9aa5000f0d6fce0f0b06ff7ac4cd9c5",
+    "runtime": "det-runtime/1.4"
+  },
+  "evidence": {
+    "detail": {
+      "replay": "bit",
+      "runtime_constraints": "det-runtime-profile-1"
+    },
+    "type": "replay_recipe"
+  },
+  "inputs": {
+    "commitment": "sha256:687322775dc3811c5078c2934128cb199e1fd90f8c70abfdf06e71b636d49390",
+    "scheme": "salted-jcs-sha256"
+  },
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "operator.example",
+    "key_id": "k-2026-10"
+  },
+  "method": {
+    "digest": "sha256:fad9362bcab1866e2e08bfb0f98c5a199b01b231ad13b855dcee86444e43d6b6",
+    "ref": "methods/limits-check",
+    "version": "3.1.0"
+  },
+  "outputs": {
+    "commitment": "sha256:98ca994f478564c9dc578fce50d90a1e7ddc9262b96a0c9d09c5b625a34bc832",
+    "scheme": "salted-jcs-sha256"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "ahFnKhdeKam0xN8ddM0PdqOsnDLSj2N78BFZuid4T/SlJx3vPEWEMAzH1LbyG9ulfcNPTZHwh8yx1bRSkv83AA=="
+  },
+  "subject": {
+    "class": "ND0",
+    "flow": {
+      "id": "quote-issue",
+      "step": "s4",
+      "version": "2.1.0"
+    },
+    "run_id": "9c873366d679501bca71dc7b8191330b",
+    "step_id": "s4",
+    "task_grant_commitment": "sha256:4244e16ef8e11d13e96e84f34a1b5f9ddf217de958db34fc2daaae23d0cbd097",
+    "trace_id": "9c873366d679501bca71dc7b8191330b"
+  }
+}

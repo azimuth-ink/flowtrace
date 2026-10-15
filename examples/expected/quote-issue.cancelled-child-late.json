@@ -1,0 +1,2008 @@
+{
+  "exit_code": 1,
+  "flows": [
+    {
+      "components": {
+        "answerability": {
+          "answerable": 1,
+          "applicable": true,
+          "declared": 1,
+          "not_evaluated": 0,
+          "reason": null,
+          "scenarios": [
+            {
+              "columns": [
+                "reference_data_version",
+                "decision",
+                "n"
+              ],
+              "dialect": "otel-sql",
+              "index": 0,
+              "reason": null,
+              "rows": 3,
+              "scenario": "Limit evaluated against stale reference data",
+              "source": "binding:quote-issue.queries.yaml",
+              "status": "answerable",
+              "step": "s4",
+              "stream": "assurance"
+            }
+          ],
+          "score": 1.0
+        },
+        "completeness": {
+          "applicable": true,
+          "blind_spots": [],
+          "by_step": {
+            "s1": {
+              "attributes": [],
+              "complete_runs": 32,
+              "fraction": 1.0,
+              "missing": {},
+              "not_evaluated": {},
+              "present_runs": 32
+            },
+            "s2": {
+              "attributes": [],
+              "complete_runs": 32,
+              "fraction": 1.0,
+              "missing": {},
+              "not_evaluated": {},
+              "present_runs": 32
+            },
+            "s3": {
+              "attributes": [],
+              "complete_runs": 32,
+              "fraction": 1.0,
+              "missing": {},
+              "not_evaluated": {},
+              "present_runs": 32
+            },
+            "s4": {
+              "attributes": [
+                {
+                  "class": "identifier",
+                  "class_assumed": false,
+                  "class_source": "declared",
+                  "name": "flow.id",
+                  "span_name": "risk.limits-check/evaluate",
+                  "stream": "assurance"
+                },
+                {
+                  "class": "identifier",
+                  "class_assumed": false,
+                  "class_source": "declared",
+                  "name": "flow.step",
+                  "span_name": "risk.limits-check/evaluate",
+                  "stream": "assurance"
+                },
+                {
+                  "class": "identifier",
+                  "class_assumed": false,
+                  "class_source": "declared",
+                  "name": "risk.limit_id",
+                  "span_name": "risk.limits-check/evaluate",
+                  "stream": "assurance"
+                },
+                {
+                  "class": "identifier",
+                  "class_assumed": false,
+                  "class_source": "declared",
+                  "name": "risk.decision",
+                  "span_name": "risk.limits-check/evaluate",
+                  "stream": "assurance"
+                }
+              ],
+              "complete_runs": 31,
+              "fraction": 0.96875,
+              "missing": {
+                "no span carries flow.step=s4": 1
+              },
+              "not_evaluated": {},
+              "present_runs": 31
+            },
+            "s5": {
+              "attributes": [],
+              "complete_runs": 31,
+              "fraction": 0.96875,
+              "missing": {
+                "no span carries flow.step=s5": 1
+              },
+              "not_evaluated": {},
+              "present_runs": 31
+            },
+            "s6": {
+              "attributes": [],
+              "complete_runs": 31,
+              "fraction": 0.96875,
+              "missing": {
+                "no span carries flow.step=s6": 1
+              },
+              "not_evaluated": {},
+              "present_runs": 31
+            }
+          },
+          "class_assumed": [],
+          "content_on_assurance": [],
+          "reason": null,
+          "runs_complete": 31,
+          "runs_sampled": 32,
+          "score": 0.96875
+        },
+        "cost_attribution": {
+          "applicable": true,
+          "by_step": {
+            "s1": {
+              "attributable": true,
+              "attributes_seen": [
+                "cost.usd"
+              ],
+              "cost_usd_total": 0.000982,
+              "spans": 32
+            },
+            "s2": {
+              "attributable": true,
+              "attributes_seen": [
+                "cost.usd"
+              ],
+              "cost_usd_total": 0.000642,
+              "spans": 32
+            },
+            "s3": {
+              "attributable": true,
+              "attributes_seen": [
+                "cost.usd"
+              ],
+              "cost_usd_total": 0.020589,
+              "spans": 32
+            },
+            "s4": {
+              "attributable": true,
+              "attributes_seen": [
+                "cost.usd"
+              ],
+              "cost_usd_total": 0.005959,
+              "spans": 31
+            },
+            "s5": {
+              "attributable": true,
+              "attributes_seen": [
+                "cost.usd",
+                "llm.usage.total_tokens"
+              ],
+              "cost_usd_total": 0.914487,
+              "spans": 31
+            },
+            "s6": {
+              "attributable": true,
+              "attributes_seen": [
+                "cost.usd"
+              ],
+              "cost_usd_total": 0.026769,
+              "spans": 31
+            }
+          },
+          "cost_attributes": [
+            "cost.usd",
+            "cost.tokens",
+            "llm.usage.total_tokens",
+            "gen_ai.usage.total_tokens"
+          ],
+          "flow_attributable": true,
+          "score": 1.0
+        },
+        "detectability": {
+          "alert_latency_bound_s": 60.0,
+          "applicable": true,
+          "reason": null,
+          "score": 1.0,
+          "targets": [
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-sync-latency-p95",
+                "threshold": 1800.0
+              },
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 961.544648,
+              "reason": null,
+              "scope": "flow",
+              "slo": "latency_p95_ms",
+              "target": 1800.0
+            },
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-async-completion-p99",
+                "threshold": 120.0
+              },
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 58.482213,
+              "reason": null,
+              "scope": "flow",
+              "slo": "async_completion_p99_s",
+              "target": 120.0
+            },
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-availability",
+                "threshold": 99.9
+              },
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 100.0,
+              "reason": null,
+              "scope": "flow",
+              "slo": "availability",
+              "target": 99.9
+            },
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-s4-latency-p99",
+                "threshold": 120.0
+              },
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 92.336648,
+              "reason": null,
+              "scope": "s4",
+              "slo": "latency_p99_ms",
+              "target": 120.0
+            },
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-s4-error-rate",
+                "threshold": 0.01
+              },
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 0.0,
+              "reason": null,
+              "scope": "s4",
+              "slo": "error_rate_percent",
+              "target": 0.01
+            },
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-degradation-rate-high",
+                "threshold": 0.25
+              },
+              "bound": "max",
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 0.0,
+              "reason": null,
+              "scope": "flow",
+              "slo": "degradation_rate",
+              "target": 0.25
+            },
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-veto-rate-high",
+                "threshold": 0.1
+              },
+              "bound": "max",
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 0.0,
+              "reason": null,
+              "scope": "flow",
+              "slo": "veto_rate",
+              "target": 0.1
+            }
+          ]
+        },
+        "execution_evidence": {
+          "applicable": true,
+          "authorization": {
+            "s6": {
+              "approval_present": {
+                "resolved": 0,
+                "spans_with_digest": 0,
+                "statuses": {}
+              },
+              "completion_run_binding_mismatches": 31,
+              "completion_status": {
+                "completed": 31,
+                "missing-span": 1
+              },
+              "examples": [
+                {
+                  "reason": "step not observed in this run",
+                  "status": "missing-span",
+                  "trace_id": "2d5ba81bc8e4ccda198dbecb757b18d1"
+                }
+              ],
+              "fraction": 0.96875,
+              "run_binding_mismatches": 31,
+              "runs": 32,
+              "statuses": {
+                "missing-span": 1,
+                "verified": 31
+              },
+              "verified": 31
+            }
+          },
+          "authorization_coverage": 0.96875,
+          "certificate_coverage": 0.96875,
+          "completion_coverage": null,
+          "populations": {
+            "authorization": [
+              "s6"
+            ],
+            "certificates": [
+              "s4"
+            ],
+            "completion": []
+          },
+          "reason": null,
+          "run_binding": "warn",
+          "score": 0.96875,
+          "steps": {
+            "s4": {
+              "evidence_types": {
+                "replay_recipe": 31
+              },
+              "examples": [
+                {
+                  "reason": "step not observed in this run",
+                  "status": "missing-span",
+                  "trace_id": "2d5ba81bc8e4ccda198dbecb757b18d1"
+                }
+              ],
+              "fraction": 0.96875,
+              "run_binding_mismatches": 31,
+              "runs": 32,
+              "statuses": {
+                "missing-span": 1,
+                "verified": 31
+              },
+              "verified": 31
+            }
+          },
+          "warnings": [
+            "step s4: 31 verified certificate(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4",
+            "step s6: 31 verified authorization record(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4"
+          ]
+        }
+      },
+      "conformance": {
+        "attempts": {
+          "s6": {
+            "max_attempts_seen": 1,
+            "over_bound": 0,
+            "runs_with_retries": 0,
+            "unreconciled": 0
+          }
+        },
+        "cross_run": {
+          "children_checked": 1,
+          "children_unresolved": 0
+        },
+        "runs": [
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "0ec48f04368aefcd285ac089ef19e701",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "0f02a90b27e410dd610a05f93da890c9",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "119474d6edb83661791dc98b56d700c5",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "14f6dba0c8416bdf312560ab918f372d",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "14f8201319e677b492d1fdf8a9942b70",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "187eb87c75ca7e601914e702ae17e083",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "1c6b08a8e14e397863346373be859032",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": false,
+            "children": [
+              {
+                "closed_at": "2026-10-15T07:19:28Z",
+                "run_id": "fcc6c3a32bb029fc6a73fb121b414e79",
+                "source": "dec-dir:run.dec.json",
+                "status": "late",
+                "task_grant_commitment": "sha256:48bec47dea32a19f9e6fb7b9742190c76e696b9968de0f4a3ce6da7c43fead01",
+                "termination": "completed"
+              }
+            ],
+            "degraded": [],
+            "divergent": [
+              "cancellation-not-propagated: a child run of this cancelled parent was not cancelled or completed within cancel_propagation_s (step 1d(c))"
+            ],
+            "failed": [],
+            "findings": [
+              {
+                "attempt_id": null,
+                "child_run_id": "fcc6c3a32bb029fc6a73fb121b414e79",
+                "code": "cancellation-not-propagated",
+                "file": "run.dec.json",
+                "reason": "child run fcc6c3a32bb029fc6a73fb121b414e79: closed (completed) at 2026-10-15T07:19:28Z, after the parent's cancellation plus the window (parent cancelled at 2026-10-15T07:17:28Z, cancel_propagation_s 30; binding B14)",
+                "reason_class": "late",
+                "step": null
+              }
+            ],
+            "notes": [
+              "termination cancelled recorded: steps not run are not absent"
+            ],
+            "outcome": null,
+            "reading": "divergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3"
+            ],
+            "source": "manifest:run.dec.json",
+            "termination": "cancelled",
+            "trace_id": "2d5ba81bc8e4ccda198dbecb757b18d1",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "3ddd954ac1f85ebaa61da6b6dc0835ab",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "3e02148463da3193d043c775817cb686",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "3e4b663adfdb2cc56e01123e7f0c50fd",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "4585a544dd940f7318cdf6b90817e0f4",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "49db7184b2dd6a4dcfe2612f14f83d5f",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "4a5e8b3b8875b55e00a6aeb692060f5f",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "6be17936f3117af3250cbb4fd9b74d40",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "6d8e311c5d92de0816bcd0b9c6905ce8",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "6ea2395d34d286ab2f2c824dfc6bee31",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "97aea3b601ee8a086923a4a14fc5977c",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "a68f5b1ed25d50262e9b0fff4bd9825a",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "af6ea6abd1a78b15556686d1f3822aea",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "b9facf1c939183a57b533be22ec19000",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "bb9719baf2000da396fd80b912ddc89b",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "c67e47528ab9ad86064b6454048d3803",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "cf726cc59f56516b0cbb65d3e3f4a8c9",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "d0e4edae38a7dbd9c23a6fcfc3883874",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "d3b54788f0c3a19a1cbe77e104e7432e",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "d90fede37313366df353d5e8dc4f9bc6",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "e4e08644e7a046e61fe55367809334ae",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "e92542dd284fefb182d7007d1cab4ce2",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "f442073c23ccc5373241782707efbe25",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "fabbd07ab52c0df9bc52cbf4037f7fe3",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
+            "outcome": null,
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "spans",
+            "termination": null,
+            "trace_id": "feac7237945d8dd5c5c9555b08fe7e76",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          }
+        ],
+        "summary": {
+          "by_reading": {
+            "absent": 0,
+            "convergent": 31,
+            "divergent": 1,
+            "failed-run": 0
+          },
+          "degraded_runs": 0,
+          "manifest_runs": 1,
+          "non_convergent_runs": 1,
+          "notes": [],
+          "off_plan_steps": {},
+          "runs": 32,
+          "unchecked": [
+            "effect-without-authorization (B10): unchecked for 31 span-sourced run(s) (no certificates to read it from)"
+          ],
+          "vetoed_runs": 0
+        },
+        "window": {
+          "absent": [],
+          "declared": [
+            "s1",
+            "s2",
+            "s3",
+            "s4",
+            "s5",
+            "s6"
+          ],
+          "divergent": [],
+          "observed": [
+            "s1",
+            "s2",
+            "s3",
+            "s4",
+            "s5",
+            "s6"
+          ],
+          "reading": "convergent"
+        }
+      },
+      "criticality": "P0",
+      "decomposition": {
+        "async_tail": [
+          "s5",
+          "s6"
+        ],
+        "availability": {
+          "base_per_step_percent": 99.974991,
+          "error_budget_percent": 0.1,
+          "target_percent": 99.9
+        },
+        "latency": {
+          "async_tail_p99": {
+            "available_ms": 118986.813,
+            "flow_target_ms": 120000.0,
+            "headroom_ms": 25318.089,
+            "min_sample_runs": 30,
+            "mode": "history",
+            "parallel_max_ms": 0.0,
+            "parallel_reserved_ms": 0.0,
+            "percentile": "p99",
+            "sample_runs": 32,
+            "scale": 1.0,
+            "serial_sum_ms": 93668.724,
+            "sync_frontier_reserved_ms": 1013.187,
+            "target_ms": 118986.813
+          },
+          "sync_frontier_p95": {
+            "available_ms": 1800.0,
+            "headroom_ms": 515.448,
+            "min_sample_runs": 30,
+            "mode": "history",
+            "parallel_max_ms": 0.0,
+            "parallel_reserved_ms": 0.0,
+            "percentile": "p95",
+            "sample_runs": 32,
+            "scale": 1.0,
+            "serial_sum_ms": 1284.552,
+            "target_ms": 1800.0
+          }
+        },
+        "steps": {
+          "s1": {
+            "availability": {
+              "asserted": null,
+              "derived": 99.979992,
+              "effective": 99.979992
+            },
+            "criticality": "P0",
+            "error_rate_percent": {
+              "asserted": null,
+              "derived": 0.0125,
+              "effective": 0.0125
+            },
+            "group": "serial",
+            "latency_p95_ms": {
+              "asserted_ms": null,
+              "base_ms": 18.852,
+              "criticality_factor": 0.8,
+              "derived_ms": 13.574,
+              "effective_ms": 13.574,
+              "group": "serial",
+              "hist_ms": 10.511,
+              "nd_factor": 1.0,
+              "safety_margin": 0.9,
+              "share": 0.010474
+            },
+            "latency_p99_ms": {
+              "approximated_from": "latency_p95_ms",
+              "asserted_ms": null,
+              "derived_ms": 19.391,
+              "effective_ms": 19.391
+            },
+            "nd_class": null
+          },
+          "s2": {
+            "availability": {
+              "asserted": null,
+              "derived": 99.979992,
+              "effective": 99.979992
+            },
+            "criticality": "P0",
+            "error_rate_percent": {
+              "asserted": null,
+              "derived": 0.0125,
+              "effective": 0.0125
+            },
+            "group": "serial",
+            "latency_p95_ms": {
+              "asserted_ms": null,
+              "base_ms": 61.261,
+              "criticality_factor": 0.8,
+              "derived_ms": 44.108,
+              "effective_ms": 44.108,
+              "group": "serial",
+              "hist_ms": 34.155,
+              "nd_factor": 1.0,
+              "safety_margin": 0.9,
+              "share": 0.034034
+            },
+            "latency_p99_ms": {
+              "approximated_from": "latency_p95_ms",
+              "asserted_ms": null,
+              "derived_ms": 63.012,
+              "effective_ms": 63.012
+            },
+            "nd_class": null
+          },
+          "s3": {
+            "availability": {
+              "asserted": null,
+              "derived": 99.979992,
+              "effective": 99.979992
+            },
+            "criticality": "P0",
+            "error_rate_percent": {
+              "asserted": null,
+              "derived": 0.0125,
+              "effective": 0.0125
+            },
+            "group": "serial",
+            "latency_p95_ms": {
+              "asserted_ms": null,
+              "base_ms": 1560.89,
+              "criticality_factor": 0.8,
+              "derived_ms": 1123.841,
+              "effective_ms": 1123.841,
+              "group": "serial",
+              "hist_ms": 870.237,
+              "nd_factor": 1.0,
+              "safety_margin": 0.9,
+              "share": 0.867161
+            },
+            "latency_p99_ms": {
+              "approximated_from": "latency_p95_ms",
+              "asserted_ms": null,
+              "derived_ms": 1605.487,
+              "effective_ms": 1605.487
+            },
+            "nd_class": null
+          },
+          "s4": {
+            "availability": {
+              "asserted": null,
+              "derived": 99.979992,
+              "effective": 99.979992
+            },
+            "criticality": "P0",
+            "error_rate_percent": {
+              "asserted": 0.01,
+              "derived": 0.0125,
+              "effective": 0.01
+            },
+            "group": "serial",
+            "latency_p95_ms": {
+              "asserted_ms": null,
+              "base_ms": 158.996,
+              "criticality_factor": 0.8,
+              "derived_ms": 103.03,
+              "effective_ms": 103.03,
+              "group": "serial",
+              "hist_ms": 88.645,
+              "nd_factor": 0.9,
+              "safety_margin": 0.9,
+              "share": 0.088331
+            },
+            "latency_p99_ms": {
+              "approximated_from": "latency_p95_ms",
+              "asserted_ms": 120,
+              "derived_ms": 147.185,
+              "effective_ms": 120.0
+            },
+            "nd_class": "ND0"
+          },
+          "s5": {
+            "criticality": "P0",
+            "group": "serial",
+            "latency_p95_ms": {
+              "approximated_from": "latency_p99_ms",
+              "asserted_ms": null,
+              "derived_ms": 61586.286,
+              "effective_ms": 61586.286
+            },
+            "latency_p99_ms": {
+              "asserted_ms": null,
+              "base_ms": 111086.375,
+              "criticality_factor": 0.8,
+              "derived_ms": 87980.409,
+              "effective_ms": 87980.409,
+              "group": "serial",
+              "hist_ms": 54132.311,
+              "nd_factor": 1.1,
+              "safety_margin": 0.9,
+              "share": 0.933602
+            },
+            "nd_class": "ND2"
+          },
+          "s6": {
+            "criticality": "P0",
+            "group": "serial",
+            "latency_p95_ms": {
+              "approximated_from": "latency_p99_ms",
+              "asserted_ms": null,
+              "derived_ms": 3981.821,
+              "effective_ms": 3981.821
+            },
+            "latency_p99_ms": {
+              "asserted_ms": null,
+              "base_ms": 7900.438,
+              "criticality_factor": 0.8,
+              "derived_ms": 5688.316,
+              "effective_ms": 5688.316,
+              "group": "serial",
+              "hist_ms": 3849.878,
+              "nd_factor": 1.0,
+              "safety_margin": 0.9,
+              "share": 0.066398
+            },
+            "nd_class": null
+          }
+        },
+        "sync_frontier": [
+          "s1",
+          "s2",
+          "s3",
+          "s4"
+        ]
+      },
+      "delta": {
+        "baseline_score": 1.0,
+        "components": {
+          "answerability": {
+            "baseline": 1.0,
+            "delta": 0.0,
+            "score": 1.0
+          },
+          "completeness": {
+            "baseline": 1.0,
+            "delta": -0.03125,
+            "score": 0.96875
+          },
+          "cost_attribution": {
+            "baseline": 1.0,
+            "delta": 0.0,
+            "score": 1.0
+          },
+          "detectability": {
+            "baseline": 1.0,
+            "delta": 0.0,
+            "score": 1.0
+          },
+          "execution_evidence": {
+            "baseline": 1.0,
+            "delta": -0.03125,
+            "score": 0.96875
+          }
+        },
+        "delta": -0.014062,
+        "score": 0.985938
+      },
+      "descriptor": "quote-issue.flow.yaml",
+      "descriptor_sha256": "bcbf43158c31ab7b5ca5dde55de1fe48c81891eacc05def4f1d188a49beb148b",
+      "effective_sampling": 1.0,
+      "execution_evidence_enabled": true,
+      "findings": [
+        {
+          "code": "evidence-run-binding",
+          "message": "step s4: 31 verified certificate(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4",
+          "severity": "warn"
+        },
+        {
+          "code": "evidence-run-binding",
+          "message": "step s6: 31 verified authorization record(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4",
+          "severity": "warn"
+        },
+        {
+          "code": "evidence-missing",
+          "message": "step s4: 31/32 runs carry a verifiable dec.step_cert_digest",
+          "severity": "warn",
+          "step": "s4"
+        },
+        {
+          "code": "authorization-missing",
+          "message": "step s6: 31/32 runs carry a verifying dec.authz_cert_digest (statuses {'missing-span': 1, 'verified': 31})",
+          "severity": "warn",
+          "step": "s6"
+        },
+        {
+          "code": "non-convergent-runs",
+          "message": "1 run(s) read divergent or failed against the authorized plan",
+          "severity": "fail"
+        },
+        {
+          "code": "cancellation-not-propagated",
+          "message": "1 run(s): cancellation-not-propagated: child run fcc6c3a32bb029fc6a73fb121b414e79: closed (completed) at 2026-10-15T07:19:28Z, after the parent's cancellation plus the window (parent cancelled at 2026-10-15T07:17:28Z, cancel_propagation_s 30; binding B14)",
+          "severity": "fail"
+        },
+        {
+          "code": "tier-threshold-regression",
+          "message": "score regressed below the tier threshold: 1.0000 -> 0.9859 (< 1.00)",
+          "severity": "fail"
+        }
+      ],
+      "id": "quote-issue",
+      "observed_slos": {
+        "flow": {
+          "async_completion_p99_s": 58.482213,
+          "availability": 100.0,
+          "latency_p95_ms": 961.544648
+        },
+        "s1": {
+          "availability": 100.0,
+          "error_rate_percent": 0.0,
+          "latency_p95_ms": 10.510754,
+          "latency_p99_ms": 10.942623
+        },
+        "s2": {
+          "availability": 100.0,
+          "error_rate_percent": 0.0,
+          "latency_p95_ms": 34.154727,
+          "latency_p99_ms": 34.62702
+        },
+        "s3": {
+          "availability": 100.0,
+          "error_rate_percent": 0.0,
+          "latency_p95_ms": 870.237274,
+          "latency_p99_ms": 875.280662
+        },
+        "s4": {
+          "availability": 100.0,
+          "error_rate_percent": 0.0,
+          "latency_p95_ms": 88.64467,
+          "latency_p99_ms": 92.336648
+        },
+        "s5": {
+          "availability": 100.0,
+          "error_rate_percent": 0.0,
+          "latency_p95_ms": 53015.846495,
+          "latency_p99_ms": 54132.31063
+        },
+        "s6": {
+          "availability": 100.0,
+          "error_rate_percent": 0.0,
+          "latency_p95_ms": 3730.218204,
+          "latency_p99_ms": 3849.878002
+        }
+      },
+      "runs_sampled": 32,
+      "score": 0.985938,
+      "slis": {
+        "degradation_rate": {
+          "approximate": true,
+          "band": {
+            "gate": false,
+            "max": 0.25,
+            "min": 0.0
+          },
+          "degraded_runs": 0,
+          "notes": [
+            "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+          ],
+          "out_of_band": null,
+          "rate": 0.0,
+          "runs": 32,
+          "source": "mixed"
+        },
+        "veto_rate": {
+          "approximate": true,
+          "band": {
+            "gate": false,
+            "max": 0.1,
+            "min": 0.0
+          },
+          "notes": [],
+          "out_of_band": null,
+          "rate": 0.0,
+          "runs": 32,
+          "source": "mixed",
+          "vetoed_runs": 0
+        }
+      },
+      "spans": 221,
+      "streams": {
+        "assurance": {
+          "assumed_rate": 1.0,
+          "declared_floor": 1.0,
+          "effective_floor": 1.0,
+          "runs": 32,
+          "source": [
+            "quote-issue.cancelled-child-late.otlp.jsonl"
+          ]
+        },
+        "distinct_exports": false,
+        "sampled": {
+          "assumed_rate": 1.0,
+          "declared_floor": 0.1,
+          "effective_floor": 0.1,
+          "runs": 32,
+          "source": [
+            "quote-issue.cancelled-child-late.otlp.jsonl"
+          ]
+        }
+      },
+      "threshold": 1.0,
+      "tier_policy": {
+        "alert_latency_s": 60.0,
+        "answerability_required": true,
+        "coverage_threshold": 1.0,
+        "ir_sla_s": 900.0,
+        "require_convergent": true,
+        "sampling_floor": 1.0,
+        "tier": "P0"
+      },
+      "verdict": "fail",
+      "verdict_reasons": [
+        "score 0.9859 < tier P0 threshold 1.00",
+        "non-convergent-runs",
+        "cancellation-not-propagated"
+      ],
+      "version": "2.1.0",
+      "weights": {
+        "answerability": 0.25,
+        "completeness": 0.35,
+        "cost_attribution": 0.1,
+        "detectability": 0.2,
+        "execution_evidence": 0.1
+      }
+    }
+  ],
+  "flowtrace": {
+    "report_schema": "flowtrace.report/v0.1",
+    "version": "0.1.0"
+  },
+  "generated_at": null,
+  "ingest_warnings": [],
+  "inputs": {
+    "adapter": "otlp_duckdb",
+    "alerts": "alerts.yaml",
+    "approvals": null,
+    "assurance_telemetry": [],
+    "assurance_telemetry_sha256": [],
+    "baseline": "quote-issue.full.json",
+    "config": "flowtrace.yaml",
+    "dec_dirs": [
+      "flow-bound"
+    ],
+    "dialects": [
+      "otel-sql"
+    ],
+    "flows_commit": null,
+    "flows_dir": "flows",
+    "methods": "methods",
+    "queries": [
+      "quote-issue.queries.yaml"
+    ],
+    "runs_dirs": [
+      "cancellation-not-propagated"
+    ],
+    "telemetry": [
+      "quote-issue.cancelled-child-late.otlp.jsonl"
+    ],
+    "telemetry_sha256": [
+      "347f4edd9ddb4159813e1d867e8153befa4bf7d457c0de0f92f8cd1e3d5c4a53"
+    ],
+    "trust_bundle": "trust-bundle.json"
+  },
+  "verdict": "fail",
+  "window": {
+    "end_ns": 1791684321586306471,
+    "logs": 0,
+    "metrics": 189,
+    "spans": 221,
+    "start_ns": 1791684000000000000,
+    "traces": 32
+  }
+}

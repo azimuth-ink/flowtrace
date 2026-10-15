@@ -117,7 +117,14 @@ def _reading_findings(conformance: dict, severity: str) -> list[dict]:
     that reason; gated exactly as non-convergent-runs."""
     out = []
     for prefix, code in READING_FINDING_CODES:
-        hits = [(r["trace_id"], d) for r in conformance["runs"] for d in r["divergent"] if d.startswith(prefix)]
+        hits = []
+        for r in conformance["runs"]:
+            for d in r["divergent"]:
+                if not d.startswith(prefix):
+                    continue
+                # the engine's own step-1d / cross-run finding on the run names the step, attempt or child: prefer it
+                own = [f for f in r.get("findings") or [] if f["code"] == code]
+                hits.append((r["trace_id"], f"{code}: {own[0]['reason']}" if own else d))
         if hits:
             runs = sorted({t for t, _ in hits})
             out.append(_finding(code, severity, f"{len(runs)} run(s): {hits[0][1]}" + (f" (first of {len(hits)})" if len(hits) > 1 else "")))

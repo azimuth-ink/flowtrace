@@ -17,7 +17,7 @@ GATE = ["gate", "--flows", str(FLOWS), "--config", str(CONFIG), "--alerts", str(
 def test_cli_gate_exit_codes(tmp_path, capsys):
     assert main(GATE + ["--telemetry", str(telemetry("full")), "--out", str(tmp_path / "f.json")]) == 0
     out = capsys.readouterr().out
-    assert "GATE quote-issue@2.0.0 [P0]: score 1.0000 >= threshold 1.00 — PASS" in out and "VERDICT: PASS" in out
+    assert "GATE quote-issue@2.1.0 [P0]: score 1.0000 >= threshold 1.00 — PASS" in out and "VERDICT: PASS" in out
     assert main(GATE + ["--telemetry", str(telemetry("s5-silent")), "--baseline", str(tmp_path / "f.json"), "--out", str(tmp_path / "s.json")]) == 1
     out = capsys.readouterr().out
     assert "FAIL (score 0.6333 < tier P0 threshold 1.00; blind-spot)" in out and "blind spots ['s5']" in out
@@ -35,7 +35,7 @@ def test_cli_other_subcommands(tmp_path, capsys):
     assert main(["tier"]) == 2
     capsys.readouterr()
     assert main(["decompose", "--flows", str(FLOWS)]) == 0
-    d = json.loads(capsys.readouterr().out)["quote-issue@2.0.0"]
+    d = json.loads(capsys.readouterr().out)["quote-issue@2.1.0"]
     assert d["latency"]["sync_frontier_p95"]["mode"] == "cold-start:equal_split"
     assert main(["conformance", "--flows", str(FLOWS), "--telemetry", str(telemetry("s5-silent")), "--dec-dir", str(DEC_DIR), "--require-convergent"]) == 1
     out = capsys.readouterr().out

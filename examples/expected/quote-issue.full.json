@@ -62,7 +62,7 @@
                 {
                   "class": "identifier",
                   "class_assumed": false,
-                  "class_source": "namespace",
+                  "class_source": "declared",
                   "name": "flow.id",
                   "span_name": "risk.limits-check/evaluate",
                   "stream": "assurance"
@@ -70,23 +70,23 @@
                 {
                   "class": "identifier",
                   "class_assumed": false,
-                  "class_source": "namespace",
+                  "class_source": "declared",
                   "name": "flow.step",
                   "span_name": "risk.limits-check/evaluate",
                   "stream": "assurance"
                 },
                 {
                   "class": "identifier",
-                  "class_assumed": true,
-                  "class_source": "assumed",
+                  "class_assumed": false,
+                  "class_source": "declared",
                   "name": "risk.limit_id",
                   "span_name": "risk.limits-check/evaluate",
                   "stream": "assurance"
                 },
                 {
                   "class": "identifier",
-                  "class_assumed": true,
-                  "class_source": "assumed",
+                  "class_assumed": false,
+                  "class_source": "declared",
                   "name": "risk.decision",
                   "span_name": "risk.limits-check/evaluate",
                   "stream": "assurance"
@@ -115,10 +115,7 @@
               "present_runs": 32
             }
           },
-          "class_assumed": [
-            "s4:risk.decision",
-            "s4:risk.limit_id"
-          ],
+          "class_assumed": [],
           "content_on_assurance": [],
           "reason": null,
           "runs_complete": 32,
@@ -262,17 +259,69 @@
               "scope": "s4",
               "slo": "error_rate_percent",
               "target": 0.01
+            },
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-degradation-rate-high",
+                "threshold": 0.25
+              },
+              "bound": "max",
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 0.0,
+              "reason": null,
+              "scope": "flow",
+              "slo": "degradation_rate",
+              "target": 0.25
+            },
+            {
+              "alert": {
+                "detection_latency_s": 45.0,
+                "id": "quote-issue-veto-rate-high",
+                "threshold": 0.1
+              },
+              "bound": "max",
+              "breached_in_window": false,
+              "detectable": true,
+              "observed": 0.0,
+              "reason": null,
+              "scope": "flow",
+              "slo": "veto_rate",
+              "target": 0.1
             }
           ]
         },
         "execution_evidence": {
           "applicable": true,
-          "authorization": {},
-          "authorization_coverage": null,
+          "authorization": {
+            "s6": {
+              "approval_present": {
+                "resolved": 0,
+                "spans_with_digest": 0,
+                "statuses": {}
+              },
+              "completion_run_binding_mismatches": 31,
+              "completion_status": {
+                "completed": 32
+              },
+              "examples": [],
+              "fraction": 1.0,
+              "run_binding_mismatches": 31,
+              "runs": 32,
+              "statuses": {
+                "verified": 32
+              },
+              "verified": 32
+            }
+          },
+          "authorization_coverage": 1.0,
           "certificate_coverage": 1.0,
           "completion_coverage": null,
           "populations": {
-            "authorization": [],
+            "authorization": [
+              "s6"
+            ],
             "certificates": [
               "s4"
             ],
@@ -297,12 +346,20 @@
             }
           },
           "warnings": [
-            "step s4: 31 verified certificate(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4"
+            "step s4: 31 verified certificate(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4",
+            "step s6: 31 verified authorization record(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4"
           ]
         }
       },
       "conformance": {
-        "attempts": {},
+        "attempts": {
+          "s6": {
+            "max_attempts_seen": 1,
+            "over_bound": 0,
+            "runs_with_retries": 0,
+            "unreconciled": 0
+          }
+        },
         "cross_run": {
           "children_checked": 0,
           "children_unresolved": 0
@@ -316,7 +373,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -348,7 +407,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -380,7 +441,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -412,7 +475,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -444,7 +509,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -476,7 +543,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -508,7 +577,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -540,7 +611,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -572,7 +645,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -604,7 +679,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -636,7 +713,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -668,7 +747,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -700,7 +781,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -726,13 +809,47 @@
           },
           {
             "absent": [],
-            "approximate": true,
+            "approximate": false,
             "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
             "findings": [],
             "notes": [],
+            "outcome": "allow",
+            "reading": "convergent",
+            "realized": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "source": "manifest:run.dec.json",
+            "termination": "completed",
+            "trace_id": "5c7cd4e0ca5f44d0f0a85af952bff581",
+            "vetoed": false,
+            "via": [
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary",
+              "primary"
+            ]
+          },
+          {
+            "absent": [],
+            "approximate": true,
+            "children": [],
+            "degraded": [],
+            "divergent": [],
+            "failed": [],
+            "findings": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -764,7 +881,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -796,7 +915,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -828,7 +949,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -860,7 +983,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -892,7 +1017,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -918,45 +1045,15 @@
           },
           {
             "absent": [],
-            "approximate": false,
-            "children": [],
-            "degraded": [],
-            "divergent": [],
-            "failed": [],
-            "findings": [],
-            "notes": [],
-            "outcome": null,
-            "reading": "convergent",
-            "realized": [
-              "s1",
-              "s2",
-              "s3",
-              "s4",
-              "s5",
-              "s6"
-            ],
-            "source": "manifest:run.dec.json",
-            "termination": null,
-            "trace_id": "b8e06f909fc7110707032a18b942e128",
-            "vetoed": false,
-            "via": [
-              "primary",
-              "primary",
-              "primary",
-              "primary",
-              "primary",
-              "primary"
-            ]
-          },
-          {
-            "absent": [],
             "approximate": true,
             "children": [],
             "degraded": [],
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -988,7 +1085,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -1020,7 +1119,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -1052,7 +1153,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -1084,7 +1187,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -1116,7 +1221,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -1148,7 +1255,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -1180,7 +1289,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -1212,7 +1323,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -1244,7 +1357,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -1276,7 +1391,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -1308,7 +1425,9 @@
             "divergent": [],
             "failed": [],
             "findings": [],
-            "notes": [],
+            "notes": [
+              "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+            ],
             "outcome": null,
             "reading": "convergent",
             "realized": [
@@ -1346,7 +1465,9 @@
           "notes": [],
           "off_plan_steps": {},
           "runs": 32,
-          "unchecked": [],
+          "unchecked": [
+            "effect-without-authorization (B10): unchecked for 31 span-sourced run(s) (no certificates to read it from)"
+          ],
           "vetoed_runs": 0
         },
         "window": {
@@ -1601,18 +1722,18 @@
       },
       "delta": null,
       "descriptor": "quote-issue.flow.yaml",
-      "descriptor_sha256": "adff7b89ab89311ef0e6f110a7125ec4d9317cdd296a928fea04aaef7d71fe91",
+      "descriptor_sha256": "bcbf43158c31ab7b5ca5dde55de1fe48c81891eacc05def4f1d188a49beb148b",
       "effective_sampling": 1.0,
       "execution_evidence_enabled": true,
       "findings": [
         {
-          "code": "attribute-class-assumed",
-          "message": "2 required attribute(s) declare no class and were read as identifier: s4:risk.decision, s4:risk.limit_id (declare `class` on the entry; FTC §4.4)",
+          "code": "evidence-run-binding",
+          "message": "step s4: 31 verified certificate(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4",
           "severity": "warn"
         },
         {
           "code": "evidence-run-binding",
-          "message": "step s4: 31 verified certificate(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4",
+          "message": "step s6: 31 verified authorization record(s) do not bind to the span's run (subject.run_id != trace id); counted as evidence because scoring.execution_evidence.run_binding is 'warn' — set 'strict' to enforce B3/B4",
           "severity": "warn"
         }
       ],
@@ -1662,12 +1783,43 @@
       },
       "runs_sampled": 32,
       "score": 1.0,
-      "slis": null,
+      "slis": {
+        "degradation_rate": {
+          "approximate": true,
+          "band": {
+            "gate": false,
+            "max": 0.25,
+            "min": 0.0
+          },
+          "degraded_runs": 0,
+          "notes": [
+            "shared-target: s5 -> s6 is both a next edge and a declared on_fail/on_exceed target; spans cannot tell the paths apart, read as primary (the manifest is the exact source)"
+          ],
+          "out_of_band": null,
+          "rate": 0.0,
+          "runs": 32,
+          "source": "mixed"
+        },
+        "veto_rate": {
+          "approximate": true,
+          "band": {
+            "gate": false,
+            "max": 0.1,
+            "min": 0.0
+          },
+          "notes": [],
+          "out_of_band": null,
+          "rate": 0.0,
+          "runs": 32,
+          "source": "mixed",
+          "vetoed_runs": 0
+        }
+      },
       "spans": 224,
       "streams": {
         "assurance": {
           "assumed_rate": 1.0,
-          "declared_floor": null,
+          "declared_floor": 1.0,
           "effective_floor": 1.0,
           "runs": 32,
           "source": [
@@ -1678,7 +1830,7 @@
         "sampled": {
           "assumed_rate": 1.0,
           "declared_floor": 0.1,
-          "effective_floor": 1.0,
+          "effective_floor": 0.1,
           "runs": 32,
           "source": [
             "quote-issue.full.otlp.jsonl"
@@ -1697,7 +1849,7 @@
       },
       "verdict": "pass",
       "verdict_reasons": [],
-      "version": "2.0.0",
+      "version": "2.1.0",
       "weights": {
         "answerability": 0.25,
         "completeness": 0.35,
@@ -1738,7 +1890,7 @@
       "quote-issue.full.otlp.jsonl"
     ],
     "telemetry_sha256": [
-      "9440db40be11329adcf2f204a280a055a8ea36ca975bedc8bfb22ac2766a1bc9"
+      "6a9f30c11e546aae8b875ae347d748c8991606b0946bf4cddd7103fb2bd9d8f6"
     ],
     "trust_bundle": "trust-bundle.json"
   },

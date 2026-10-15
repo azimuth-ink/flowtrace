@@ -1,0 +1,12 @@
+{
+  "payload": {
+    "decision": "approve",
+    "price": 449.97,
+    "request": {
+      "quantity": 3,
+      "sku": "QT-1000"
+    },
+    "template": "quote-document.v1"
+  },
+  "salt": "e7587854f14bc52c1aafd2d3ad6dee26"
+}

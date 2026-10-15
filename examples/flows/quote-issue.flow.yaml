@@ -3,7 +3,7 @@ kind: Flow
 metadata:
   id: quote-issue
   name: "Retail quote issuance"
-  version: 2.0.0
+  version: 2.1.0
   owner: { business: retail-products, technical: team-quotes }
   criticality: P0
   description: >
@@ -11,6 +11,7 @@ metadata:
     asynchronous document delivery. Shared running example across FTC, PD and DEC.
 spec:
   trigger: { type: user_interaction, description: "Customer submits quote request" }
+  outcomes: [allow, block, clarify, review, error]
   steps:
     - id: s1
       component: edge.api-gateway
@@ -26,6 +27,7 @@ spec:
       component: payments.quote-engine
       op: price
       kind: sync
+      on_fail: { outcome: review }
       next: [s4]
     - id: s4
       component: risk.limits-check
@@ -37,29 +39,40 @@ spec:
       required_telemetry:
         traces:
           - span_name: risk.limits-check/evaluate
-            required_attributes: [flow.id, flow.step, risk.limit_id, risk.decision]
+            required_attributes:
+              - { name: flow.id, class: identifier }
+              - { name: flow.step, class: identifier }
+              - { name: risk.limit_id, class: identifier }
+              - { name: risk.decision, class: identifier }
         metrics:
           - { name: step_duration_seconds, type: histogram }
       debug_scenarios:
         - scenario: "Limit evaluated against stale reference data"
           required_data: ["reference-data version per evaluation", "decision by version"]
           verification_query: "<query returning decisions grouped by reference-data version for flow.step=s4 over the window>"
+      on_fail: { outcome: block }
       next: [s5]
     - id: s5
       component: docs.render
       op: generate
       kind: async
       nd_class: ND2
+      on_fail: { to: s6, latch: true }      # deliver without the rendered document
       next: [s6]
     - id: s6
       component: notify.customer
       op: deliver
       kind: async
+      effect: true
+      attempts: { max: 3, on_exceed: { outcome: error } }
   slos:
     availability: 99.9
     latency_p95_ms: 1800          # trigger → s4 (synchronous frontier)
     async_completion_p99_s: 120   # trigger → s6
+  cancel_propagation_s: 30
+  max_decision_age_s: 300
   telemetry:
     required_signals: [trace, metric]
     attribute_namespace: flow
     sampling_floor: 0.10
+    assurance_sampling_floor: 1.0

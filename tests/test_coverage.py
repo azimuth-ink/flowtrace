@@ -4,14 +4,14 @@ import json
 
 import pytest
 
-from conftest import ALERTS, DEC_DIR, TRUST_BUNDLE
+from conftest import ALERTS, CERTIFIED_RUN, DEC_DIR, TRUST_BUNDLE
 from flowtrace.adapters.base import SpanRow
 from flowtrace.coverage import (CertificateIndex, Run, compose, evaluate_completeness, evaluate_cost_attribution,
                                 evaluate_detectability, evaluate_execution_evidence, index_runs, load_alerts,
                                 observed_slo_values)
 from flowtrace.flows import Flow
 
-S4_DIGEST = "sha256:752aa16d1475618577e1631732fc02edffb51f25c5db714d550c98aa8d179659"
+S4_DIGEST = "sha256:9c2729352e998d16f69920dc726b72bbf722f2bb326d927c6d90146eb87fc143"      # examples/dec/flow-bound/step-s4.dec.json
 
 
 def runs_of(adapter, flow):
@@ -19,7 +19,7 @@ def runs_of(adapter, flow):
 
 
 def span(trace, sid, step, parent=None, start=0, end=10, status="OK", **attrs):
-    base = {"flow.id": "quote-issue", "flow.version": "2.0.0", "flow.step": step}
+    base = {"flow.id": "quote-issue", "flow.version": "2.1.0", "flow.step": step}
     base.update(attrs)
     return SpanRow(trace, sid, parent, f"{step}-span", "SERVER", start, end, status, base)
 
@@ -28,7 +28,7 @@ def span(trace, sid, step, parent=None, start=0, end=10, status="OK", **attrs):
 def test_boundary_spans_exclude_interior_spans(adapters, canon_flow):
     runs = runs_of(adapters["full"], canon_flow)
     assert len(runs) == 32
-    run = runs["b8e06f909fc7110707032a18b942e128"]
+    run = runs[CERTIFIED_RUN]
     assert len(run.by_step["s3"]) == 2 and len(run.boundaries["s3"]) == 1
     assert run.boundaries["s3"][0].name == "payments.quote-engine/price"
     assert [s for s, _ in run.realized()] == ["s1", "s2", "s3", "s4", "s5", "s6"]
@@ -63,7 +63,7 @@ def test_completeness_required_metric_and_b2_attributes(canon_flow, adapters):
     tiny = Flow(canon_flow.path, doc, "0" * 64)
     runs2 = index_runs([SpanRow("t1", "a", None, "n", "SERVER", 0, 1, "OK", {"flow.id": "quote-issue", "flow.version": "9.9.9", "flow.step": "s1"})])
     r = evaluate_completeness(tiny, runs2, [], [])
-    assert list(r["by_step"]["s1"]["missing"]) == ["boundary span flow.version 9.9.9 != declared 2.0.0"]
+    assert list(r["by_step"]["s1"]["missing"]) == ["boundary span flow.version 9.9.9 != declared 2.1.0"]
     assert evaluate_completeness(tiny, {}, [], [])["reason"] == "no runs of the flow observed in the window"
 
 
@@ -152,9 +152,15 @@ def index():
 
 
 def test_certificate_index_finds_the_signed_example(index):
-    assert len(index.steps) == 6 and len(index.runs) == 1 and index.errors == []
-    assert S4_DIGEST in index.steps
-    assert "b8e06f909fc7110707032a18b942e128" in index.runs_by_run_id
+    """examples/dec/flow-bound is searched recursively: the §4.4 run, the three
+    variants, the cancelled pair and the negatives (several claim one run id)."""
+    assert index.errors == [] and S4_DIGEST in index.steps
+    # five certificates claim the §4.4 run id: flow-bound/ and the negatives built on it (flow-binding, effect-without-authorization,
+    # sod-violation, approval-payload-mismatch) — the trigger span names the one it means by dec.run_cert_digest (B6)
+    assert sorted(p.parent.relative_to(DEC_DIR).as_posix() for p, c in index.runs_by_run_id[CERTIFIED_RUN].values()) == [
+        ".", "negative", "negative/approval-payload-mismatch", "negative/effect-without-authorization", "negative/sod-violation"]
+    assert len(index.runs) == 15 and len(index.steps) == 53 and len(index.authorizations) == 12 and len(index.completions) == 13 and len(index.approvals) == 3
+    assert {p.name for p, c in index.steps.values()} >= {"step-s6.attempt-2.dec.json", "step-s5.9.dec.json", "step-s4.flow-step-s3.dec.json"}
 
 
 def test_execution_evidence_full_window(canon_flow, adapters, index):
@@ -168,7 +174,7 @@ def test_execution_evidence_full_window(canon_flow, adapters, index):
 
 
 def test_execution_evidence_statuses(canon_flow, index, tmp_path):
-    good = span("b8e06f909fc7110707032a18b942e128", "a", "s4", **{"dec.step_cert_digest": S4_DIGEST})
+    good = span(CERTIFIED_RUN, "a", "s4", **{"dec.step_cert_digest": S4_DIGEST})
     assert index.verify_step_digest(S4_DIGEST, good) == ("verified", None)
     # digest not in the index
     assert index.verify_step_digest("sha256:" + "0" * 64, good)[0] == "certificate-not-found"
@@ -176,7 +182,7 @@ def test_execution_evidence_statuses(canon_flow, index, tmp_path):
     wrong_step = span(good.trace_id, "a", "s3", **{"dec.step_cert_digest": S4_DIGEST})
     assert index.verify_step_digest(S4_DIGEST, wrong_step)[0] == "flow-mismatch"
     # an attestation (ND2) is not execution evidence
-    s5_digest = next(d for d, (p, c) in index.steps.items() if c["subject"]["flow"]["step"] == "s5")
+    s5_digest = next(d for d, (p, c) in index.steps.items() if p == DEC_DIR / "step-s5.dec.json")
     s5_span = span(good.trace_id, "a", "s5", **{"dec.step_cert_digest": s5_digest})
     assert index.verify_step_digest(s5_digest, s5_span)[0] == "class-mismatch"
     # a tampered certificate: one byte changed -> digest changes; re-indexed under the new digest it fails the signature
@@ -205,6 +211,8 @@ def test_execution_evidence_not_applicable_without_replayable_steps(canon_flow):
     for s in doc["spec"]["steps"]:
         s.pop("nd_class", None)
         s.pop("method", None)
+        s.pop("effect", None)
+        s.pop("attempts", None)
     r = evaluate_execution_evidence(Flow(canon_flow.path, doc, "0" * 64), {}, None)
     assert r["applicable"] is False and r["score"] == 1.0
 

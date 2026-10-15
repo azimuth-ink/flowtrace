@@ -1,0 +1,34 @@
+{
+  "dec_version": "0.2",
+  "head": "sha256:7bd00db2f26e3cc3a3df0740e7a7826fb854b600108d055daf0d32198835a115",
+  "issued_at": "2026-10-15T07:19:28Z",
+  "issuer": {
+    "id": "operator.example",
+    "key_id": "k-2026-10"
+  },
+  "kind": "run",
+  "manifest": {
+    "agent_version": "lookup-agent/0.2.0",
+    "steps": [
+      {
+        "cert_digest": "sha256:7bd00db2f26e3cc3a3df0740e7a7826fb854b600108d055daf0d32198835a115",
+        "class": "ND0",
+        "step_id": "s1"
+      }
+    ],
+    "terminated_at": "2026-10-15T07:19:28Z",
+    "termination": "completed"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "V2hh1ku4pxm8CfTibYD388wPIMhajjiMk+VCYcmqJHXH6DJJTEQbzVSpsTaS/4eBqb20GneUDpI2j7X7cpeeAA=="
+  },
+  "subject": {
+    "run_id": "fcc6c3a32bb029fc6a73fb121b414e79",
+    "trace_id": "fcc6c3a32bb029fc6a73fb121b414e79"
+  },
+  "time_bounds": {
+    "end": "2026-10-15T07:17:28Z",
+    "start": "2026-10-15T07:17:28Z"
+  }
+}

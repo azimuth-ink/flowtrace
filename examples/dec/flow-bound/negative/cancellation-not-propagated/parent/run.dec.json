@@ -1,0 +1,57 @@
+{
+  "dec_version": "0.2",
+  "head": "sha256:d6eb20172710a6c4869c0e05ceaeffa49a19a0d7cd6026829975db3b9d831f7f",
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "operator.example",
+    "key_id": "k-2026-10"
+  },
+  "kind": "run",
+  "manifest": {
+    "agent_version": "quote-agent/1.0.0",
+    "children": [
+      {
+        "run_id": "fcc6c3a32bb029fc6a73fb121b414e79",
+        "task_grant_commitment": "sha256:48bec47dea32a19f9e6fb7b9742190c76e696b9968de0f4a3ce6da7c43fead01"
+      }
+    ],
+    "steps": [
+      {
+        "cert_digest": "sha256:ddf6e8c814357f47bb333929dc2cf536cd175037515701a9dc1a505a68072fc7",
+        "class": "ND0",
+        "flow_step": "s1",
+        "step_id": "s1"
+      },
+      {
+        "cert_digest": "sha256:932d8b13b75fc06ce981d8fd1895726dcfe1273dbd550722dd976992c9fef472",
+        "class": "ND0",
+        "flow_step": "s2",
+        "step_id": "s2"
+      },
+      {
+        "cert_digest": "sha256:d6eb20172710a6c4869c0e05ceaeffa49a19a0d7cd6026829975db3b9d831f7f",
+        "class": "ND0",
+        "flow_step": "s3",
+        "step_id": "s3"
+      }
+    ],
+    "terminated_at": "2026-10-15T07:17:28Z",
+    "termination": "cancelled"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "k3j2ezdCqSkRyubBvLMPN6tpcXIVcc19qSWrBgtPicHwla01EuM7G067UjfW2w6Cshy4Nhnmg7Vo6t9myTftBg=="
+  },
+  "subject": {
+    "flow": {
+      "id": "quote-issue",
+      "version": "2.1.0"
+    },
+    "run_id": "2d5ba81bc8e4ccda198dbecb757b18d1",
+    "trace_id": "2d5ba81bc8e4ccda198dbecb757b18d1"
+  },
+  "time_bounds": {
+    "end": "2026-10-15T07:17:28Z",
+    "start": "2026-10-15T07:17:28Z"
+  }
+}

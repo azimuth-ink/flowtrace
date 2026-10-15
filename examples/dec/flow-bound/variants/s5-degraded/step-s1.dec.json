@@ -1,0 +1,52 @@
+{
+  "chain": {
+    "position": 1,
+    "prev": "genesis"
+  },
+  "dec_version": "0.2",
+  "environment": {
+    "image_digest": "sha256:7ba451133c403e85ee98073f28fd640bc9aa5000f0d6fce0f0b06ff7ac4cd9c5",
+    "runtime": "det-runtime/1.4"
+  },
+  "evidence": {
+    "detail": {
+      "replay": "bit",
+      "runtime_constraints": "det-runtime-profile-1"
+    },
+    "type": "replay_recipe"
+  },
+  "inputs": {
+    "commitment": "sha256:60becef48222055e720ef75540173c8d24f13d391ecd90986853009c351cd662",
+    "scheme": "salted-jcs-sha256"
+  },
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "operator.example",
+    "key_id": "k-2026-10"
+  },
+  "method": {
+    "digest": "sha256:a439c9fbf31b6d06b544d4fc8bf73f4099d3a285aa7cfb48d328f5b6c73afa7a",
+    "ref": "methods/request-normalize",
+    "version": "1.0.0"
+  },
+  "outputs": {
+    "commitment": "sha256:8ea6b7209d43901d0b32f0c1b2389ff6e4786fb9e8d832d778ed0de570f9f942",
+    "scheme": "salted-jcs-sha256"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "+RDLwoAr7+REPeixjModocms1EYS3bX78OLndd5XXPSRd1ch6tpT3+SmRHZUlFK+lGqsetFOsy/vTnzaXlhiAw=="
+  },
+  "subject": {
+    "class": "ND0",
+    "flow": {
+      "id": "quote-issue",
+      "step": "s1",
+      "version": "2.1.0"
+    },
+    "run_id": "6a1f4b7a721e678ee41e3d5b4c73d5c8",
+    "step_id": "s1",
+    "task_grant_commitment": "sha256:acf2ae83b1782afa6540bac9f98dcb1b93e3ae033d0e22ed81214fcf95b1d1f3",
+    "trace_id": "6a1f4b7a721e678ee41e3d5b4c73d5c8"
+  }
+}

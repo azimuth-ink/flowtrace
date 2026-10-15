@@ -1,0 +1,57 @@
+{
+  "dec_version": "0.2",
+  "head": "sha256:2c8bef28c038bfb76f0beeb25267944e66c5fc00fa88e784789f36da48c949cd",
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "operator.example",
+    "key_id": "k-2026-10"
+  },
+  "kind": "run",
+  "manifest": {
+    "agent_version": "quote-agent/1.0.0",
+    "children": [
+      {
+        "run_id": "ab026d1673f96f3b9509ff810506802a",
+        "task_grant_commitment": "sha256:3ca2b2c38c1ca4777c0617dfbda651cc1ad236226bc9dc7102407304b3103ece"
+      }
+    ],
+    "steps": [
+      {
+        "cert_digest": "sha256:e5c4f87e97c386c6c269fc8f691009e6c2a75746f9a63dd0b9c7c1fe322bf020",
+        "class": "ND0",
+        "flow_step": "s1",
+        "step_id": "s1"
+      },
+      {
+        "cert_digest": "sha256:8a06a76bc194aff8e037931883a16f65bb98d36a4d6ac6c67ee32fb54e818b9f",
+        "class": "ND0",
+        "flow_step": "s2",
+        "step_id": "s2"
+      },
+      {
+        "cert_digest": "sha256:2c8bef28c038bfb76f0beeb25267944e66c5fc00fa88e784789f36da48c949cd",
+        "class": "ND0",
+        "flow_step": "s3",
+        "step_id": "s3"
+      }
+    ],
+    "terminated_at": "2026-10-15T07:17:28Z",
+    "termination": "cancelled"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "b5807NgR9rwJEA9g2Lnr2wlQ1hDRlh48Im2b2V0UXqFa1OAyI4qioGRdaMtAR/I2cWGROMcf3JoO8vLVhWZ7CQ=="
+  },
+  "subject": {
+    "flow": {
+      "id": "quote-issue",
+      "version": "2.1.0"
+    },
+    "run_id": "e22cc194a2e9ee438c26b056a13169e6",
+    "trace_id": "e22cc194a2e9ee438c26b056a13169e6"
+  },
+  "time_bounds": {
+    "end": "2026-10-15T07:17:28Z",
+    "start": "2026-10-15T07:17:28Z"
+  }
+}

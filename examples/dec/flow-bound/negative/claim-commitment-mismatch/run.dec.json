@@ -1,0 +1,76 @@
+{
+  "dec_version": "0.2",
+  "head": "sha256:331ae27059fb85679a9cad0dd1893e996043be190cc9cbf3e27ce3e740dc6b66",
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "operator.example",
+    "key_id": "k-2026-10"
+  },
+  "kind": "run",
+  "manifest": {
+    "agent_version": "quote-agent/1.0.0",
+    "outcome": "allow",
+    "steps": [
+      {
+        "cert_digest": "sha256:5270b708216a9dffe7758377389dcab5aed47fcac26cf8b25836b203eb78c3c9",
+        "class": "ND0",
+        "flow_step": "s1",
+        "step_id": "s1",
+        "via": "primary"
+      },
+      {
+        "cert_digest": "sha256:1e3edd3e9dd63ce02d10f26433092868b37fb91a05b4c7b5b57851f78508c709",
+        "class": "ND0",
+        "flow_step": "s2",
+        "step_id": "s2",
+        "via": "primary"
+      },
+      {
+        "cert_digest": "sha256:06491a073fcc023954c5af886f99372bd3e465ed3a3f38ba2c0e1aebe7c00d7e",
+        "class": "ND0",
+        "flow_step": "s3",
+        "step_id": "s3",
+        "via": "primary"
+      },
+      {
+        "cert_digest": "sha256:67ba5ee6b070a624d3344e65b1126506a69120fdd5ea189bc8281042e1c2993c",
+        "class": "ND0",
+        "flow_step": "s4",
+        "step_id": "s4",
+        "via": "primary"
+      },
+      {
+        "cert_digest": "sha256:d9b6f47066608d4a8d8e7e5902de6e73f8b510d2f0feb0745a27ac95eb670bc6",
+        "class": "ND2",
+        "flow_step": "s5",
+        "step_id": "s5",
+        "via": "primary"
+      },
+      {
+        "cert_digest": "sha256:f7cc7a4ed0f5488cd5567132b99dfd97f8055048efe980562477762b84c7fa1d",
+        "class": "ND0",
+        "flow_step": "s6",
+        "step_id": "s6",
+        "via": "primary"
+      }
+    ],
+    "terminated_at": "2026-10-15T07:17:28Z",
+    "termination": "completed"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "6abrcgFyp/5GR+cVrqmZhbU5pQg5nksifZvNAMx6Ghy5DXWSINsH+QKJDdJM/5t8q4oQj5KHz5GHCUHyIYwIDA=="
+  },
+  "subject": {
+    "flow": {
+      "id": "quote-issue",
+      "version": "2.1.0"
+    },
+    "run_id": "344987d96e534989a4e7e0f702011e16",
+    "trace_id": "344987d96e534989a4e7e0f702011e16"
+  },
+  "time_bounds": {
+    "end": "2026-10-15T07:17:28Z",
+    "start": "2026-10-15T07:17:28Z"
+  }
+}

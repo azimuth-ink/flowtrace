@@ -120,7 +120,11 @@ def test_span_attempts_collapse_and_b17_is_unchecked(degrading_flow):
 
 
 def test_attempts_block_absent_without_effect_steps(canon_flow):
-    r = evaluate(canon_flow, index_runs(spans("t1", PRIMARY, "2.0.0")), None)
+    doc = copy.deepcopy(canon_flow.doc)
+    for s in doc["spec"]["steps"]:
+        s.pop("effect", None)
+        s.pop("attempts", None)
+    r = evaluate(Flow(canon_flow.path, doc, "0" * 64), index_runs(spans("t1", PRIMARY)), None)
     assert r["attempts"] == {} and r["summary"]["unchecked"] == []
 
 

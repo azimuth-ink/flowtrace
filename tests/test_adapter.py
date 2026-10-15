@@ -36,7 +36,7 @@ def test_full_window_loads_with_the_expected_counts(adapters):
     assert isinstance(a, Adapter) and a.dialects == frozenset({"otel-sql"})
     w = a.extent()
     assert w.start_ns == 1791684000000000000 and w.end_ns > w.start_ns
-    spans = a.list_spans("quote-issue", w, "2.0.0")
+    spans = a.list_spans("quote-issue", w, "2.1.0")
     assert len(spans) == 32 * 7 and all(s.attributes["flow.id"] == "quote-issue" for s in spans)
     assert len(a.list_spans("other", w)) == 0
     assert len(a.list_metrics("quote-issue", w)) == 192

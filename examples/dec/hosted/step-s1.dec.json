@@ -1,0 +1,54 @@
+{
+  "chain": {
+    "position": 1,
+    "prev": "genesis"
+  },
+  "dec_version": "0.2",
+  "environment": {
+    "image_digest": "sha256:7ba451133c403e85ee98073f28fd640bc9aa5000f0d6fce0f0b06ff7ac4cd9c5",
+    "model": {
+      "id": "dispute-reasons",
+      "params": {
+        "temperature": 0
+      },
+      "version": "2026-09"
+    },
+    "runtime": "agent-runtime/2.1"
+  },
+  "evidence": {
+    "detail": {
+      "candidate_set_digest": "sha256:1041229295c30c1a24a507671465ebfddee6fd2a4274c88704d75d9fc64b8af4",
+      "record_digest": "sha256:24db113d0f7037ae997fd8f62675ec4c93db5dbab5217efc6deef8f0768a38d0",
+      "replay": "none"
+    },
+    "type": "configuration_record"
+  },
+  "inputs": {
+    "commitment": "sha256:7c16278a0b5afff8087055e8c02c9f1b9470450e2e61e72f7556d3988fa6d98b",
+    "scheme": "salted-jcs-sha256"
+  },
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "operator.example",
+    "key_id": "k-2026-10"
+  },
+  "method": {
+    "digest": "sha256:24db113d0f7037ae997fd8f62675ec4c93db5dbab5217efc6deef8f0768a38d0",
+    "kind": "hosted",
+    "ref": "methods/dispute-classifier",
+    "version": "1.2.0"
+  },
+  "outputs": {
+    "commitment": "sha256:5572ac3fdbfbb92bef7757badbc240e140df869d0d8d478b186d0c03f16319d5",
+    "scheme": "salted-jcs-sha256"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "HXrmC32ldnP2olixtFU2ixaT3iw3CMmxVLJqJp2IDV5ctzaz1fwaKq+ZyYkjHgK1i8oX9DzAgfU1SeyPZCHRAg=="
+  },
+  "subject": {
+    "class": "ND1",
+    "run_id": "r-8cc8220242dc",
+    "step_id": "s1"
+  }
+}

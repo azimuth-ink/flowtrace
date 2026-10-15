@@ -15,6 +15,12 @@
 # decision are present — a window whose s4 spans lack risk.decision returns
 # no rows and the scenario is unanswerable, which is the distinction between
 # completeness and answerability the paper draws.
+#
+# `stream: assurance` (revision 2026-10-11, FTC §4.4; spec §4.1) declares
+# which stream the query reads: the scenario needs only identifier-class
+# attributes (s4's four required attributes are all `class: identifier` in
+# the 2.1.0 descriptor), so it is evaluated on the assurance stream; a
+# scenario needing a `content` attribute would declare `stream: sampled`.
 apiVersion: flowtrace.queries/v0.1
 bindings:
   - flow: quote-issue
@@ -33,3 +39,4 @@ bindings:
       GROUP BY 1, 2
       ORDER BY 1, 2
     expected_shape: { min_rows: 1, required_columns: [reference_data_version, decision, n] }
+    stream: assurance

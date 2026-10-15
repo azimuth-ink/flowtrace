@@ -1,0 +1,52 @@
+{
+  "chain": {
+    "position": 1,
+    "prev": "genesis"
+  },
+  "dec_version": "0.2",
+  "environment": {
+    "image_digest": "sha256:7ba451133c403e85ee98073f28fd640bc9aa5000f0d6fce0f0b06ff7ac4cd9c5",
+    "runtime": "det-runtime/1.4"
+  },
+  "evidence": {
+    "detail": {
+      "replay": "bit",
+      "runtime_constraints": "det-runtime-profile-1"
+    },
+    "type": "replay_recipe"
+  },
+  "inputs": {
+    "commitment": "sha256:08bd78d9671c09d48b5aa52ef91b6d41f93f215bc2a6427dbf004a5d075dca0e",
+    "scheme": "salted-jcs-sha256"
+  },
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "operator.example",
+    "key_id": "k-2026-10"
+  },
+  "method": {
+    "digest": "sha256:a439c9fbf31b6d06b544d4fc8bf73f4099d3a285aa7cfb48d328f5b6c73afa7a",
+    "ref": "methods/request-normalize",
+    "version": "1.0.0"
+  },
+  "outputs": {
+    "commitment": "sha256:9a31ec0b163ef9ce3533c9d0481878ddcd83c306da98a7705e3a3385dc29c297",
+    "scheme": "salted-jcs-sha256"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "8dLpAdxA2bLmDNvlxLFcwv69shQgdrtsvidJMI1oM13kveSHX+ASBPuoUYeu/rVgnzYDjsjwg1R6qdU3Qqt9CQ=="
+  },
+  "subject": {
+    "class": "ND0",
+    "flow": {
+      "id": "quote-issue",
+      "step": "s1",
+      "version": "2.1.0"
+    },
+    "run_id": "9c873366d679501bca71dc7b8191330b",
+    "step_id": "s1",
+    "task_grant_commitment": "sha256:4244e16ef8e11d13e96e84f34a1b5f9ddf217de958db34fc2daaae23d0cbd097",
+    "trace_id": "9c873366d679501bca71dc7b8191330b"
+  }
+}

@@ -34,13 +34,23 @@ def test_namespace_table_names_the_three_effect_step_digests():
     assert "flow.segment.id" not in CANONICAL_ATTRIBUTES and "flow.priority" not in CANONICAL_ATTRIBUTES
 
 
+def name_only(flow):
+    """The flow with its s4 entries in the name-only form of v2.0.0 and no assurance stream."""
+    doc = copy.deepcopy(flow.doc)
+    doc["spec"]["telemetry"].pop("assurance_sampling_floor", None)
+    for spec in doc["spec"]["steps"][3]["required_telemetry"]["traces"]:
+        spec["required_attributes"] = [a["name"] if isinstance(a, dict) else a for a in spec["required_attributes"]]
+    return Flow(flow.path, doc, "0" * 64)
+
+
 def test_attribute_entries_both_forms(degrading_flow, canon_flow):
     spec = degrading_flow.step("s4")["required_telemetry"]["traces"][0]
     assert attribute_entries(spec) == [{"name": "flow.id", "class": "identifier"}, {"name": "flow.step", "class": "identifier"},
                                        {"name": "risk.limit_id", "class": "identifier"}, {"name": "risk.decision", "class": "identifier"}]
-    spec = canon_flow.step("s4")["required_telemetry"]["traces"][0]
+    assert attribute_entries(canon_flow.step("s4")["required_telemetry"]["traces"][0]) == attribute_entries(spec)
+    spec = name_only(canon_flow).step("s4")["required_telemetry"]["traces"][0]
     names = required_attribute_names(spec)
-    assert names == ["flow.id", "flow.step", "risk.limit_id", "risk.decision"]
+    assert names == ["flow.id", "flow.step", "risk.limit_id", "risk.decision"] and all(e["class"] is None for e in attribute_entries(spec))
     assert attribute_entries({"required_attributes": ["a", {"name": "b"}, {"name": "c", "class": "content"}, {"nope": 1}, ""]}) == [
         {"name": "a", "class": None}, {"name": "b", "class": None}, {"name": "c", "class": "content"}]
 
@@ -63,7 +73,8 @@ def test_classified_attributes_and_streams(degrading_flow, canon_flow):
         ("flow.id", "identifier", "declared", "assurance"), ("flow.step", "identifier", "declared", "assurance"),
         ("risk.limit_id", "identifier", "declared", "assurance"), ("risk.decision", "identifier", "declared", "assurance")]
     assert c["s1"] == [] and content_attributes(degrading_flow) == {sid: set() for sid in PRIMARY}
-    c = classified_attributes(canon_flow)
+    assert classified_attributes(canon_flow) == c
+    c = classified_attributes(name_only(canon_flow))
     assert [(r["name"], r["class_source"]) for r in c["s4"]] == [("flow.id", "namespace"), ("flow.step", "namespace"),
                                                                  ("risk.limit_id", "assumed"), ("risk.decision", "assumed")]
     doc = copy.deepcopy(degrading_flow.doc)
@@ -157,7 +168,8 @@ def test_answerability_reads_the_declared_stream(degrading_flow, tmp_path):
 def test_effective_floors(degrading_flow, canon_flow, cfg):
     p0 = policy(cfg, "P0")
     assert effective_floors(degrading_flow, p0) == {"assurance": 1.0, "sampled": 0.1, "declared_assurance_floor": 1.0, "declared_sampling_floor": 0.1}
-    assert effective_floors(canon_flow, p0) == {"assurance": 1.0, "sampled": 1.0, "declared_assurance_floor": None, "declared_sampling_floor": 0.1}
+    assert effective_floors(canon_flow, p0) == effective_floors(degrading_flow, p0)
+    assert effective_floors(name_only(canon_flow), p0) == {"assurance": 1.0, "sampled": 1.0, "declared_assurance_floor": None, "declared_sampling_floor": 0.1}
     doc = copy.deepcopy(degrading_flow.doc)
     doc["metadata"]["criticality"] = "P2"
     doc["spec"]["telemetry"]["assurance_sampling_floor"] = 0.3
@@ -200,27 +212,25 @@ def test_floor_findings_with_a_declared_assurance_stream(degrading_flow, canon_f
     r = evaluate_flow(bad, adapter, win, cfg, alerts=None, bindings=[], index=None, exec_enabled=False, sampling_rate=1.0, baseline_flow=None, streams=s)
     assert "assurance-floor-below-sampling-floor" in {f["code"] for f in r["findings"] if f["severity"] == "fail"}
     # without an assurance stream the single-stream rule of 2.3 applies (tier floor 1.0 for P0)
-    r = gate_flow(canon_flow, cfg, telemetry("full"), sampling_rate=0.5)
+    r = gate_flow(name_only(canon_flow), cfg, telemetry("full"), sampling_rate=0.5)
     assert {f["code"] for f in r["findings"] if f["severity"] == "fail"} == {"sampling-below-floor"} and r["effective_sampling"] == 0.5
     assert r["streams"]["distinct_exports"] is False and r["streams"]["assurance"]["declared_floor"] is None
 
 
 def test_attribute_class_assumed_finding_only_without_declared_classes(degrading_flow, canon_flow, cfg, tmp_path):
-    r = gate_flow(canon_flow, cfg, telemetry("full"))
+    r = gate_flow(name_only(canon_flow), cfg, telemetry("full"))
     (w,) = [f for f in r["findings"] if f["code"] == "attribute-class-assumed"]
     assert w["severity"] == "warn" and "s4:risk.decision, s4:risk.limit_id" in w["message"]
     off = copy.deepcopy(cfg)
     off["attribute_classes"]["warn_on_assumed"] = False
-    assert not [f for f in gate_flow(canon_flow, off, telemetry("full"))["findings"] if f["code"] == "attribute-class-assumed"]
-    r = gate_flow(degrading_flow, cfg, _window_210(tmp_path))
-    assert not [f for f in r["findings"] if f["code"] == "attribute-class-assumed"]
+    assert not [f for f in gate_flow(name_only(canon_flow), off, telemetry("full"))["findings"] if f["code"] == "attribute-class-assumed"]
+    for flow in (degrading_flow, canon_flow):
+        assert not [f for f in gate_flow(flow, cfg, telemetry("full"))["findings"] if f["code"] == "attribute-class-assumed"]
 
 
 def _window_210(tmp_path, name="full"):
-    src = telemetry(name).read_text(encoding="utf-8")
-    out = tmp_path / f"{name}-2.1.0.otlp.jsonl"
-    out.write_text(src.replace('{"key":"flow.version","value":{"stringValue":"2.0.0"}}', '{"key":"flow.version","value":{"stringValue":"2.1.0"}}'))
-    return out
+    """The window as shipped (flow.version 2.1.0)."""
+    return telemetry(name)
 
 
 # ----------------------------------------------------------------- the second export through the gate
@@ -228,11 +238,14 @@ def test_gate_with_a_separate_assurance_export(gate_inputs, tmp_path):
     full = str(telemetry("full"))
     report, rc = run_gate(gate_inputs("full", assurance_telemetry=[full], assurance_sampling_rate=1.0, sampling_rate=0.1))
     f = report["flows"][0]
-    # the 2.0.0 descriptor declares no assurance stream: one stream, tier floor 1.0, the sampled rate 0.1 fails it
-    assert rc == 1 and f["streams"]["distinct_exports"] is True and f["streams"]["assurance"]["source"] == ["quote-issue.full.otlp.jsonl"]
+    # the 2.1.0 descriptor assures at 1.0 and samples at 0.10: the assurance export at 1.0 satisfies the tier, the sampled at 0.1 its own floor
+    assert rc == 0 and f["streams"]["distinct_exports"] is True and f["streams"]["assurance"]["source"] == ["quote-issue.full.otlp.jsonl"]
     assert report["inputs"]["assurance_telemetry"] == ["quote-issue.full.otlp.jsonl"] and len(report["inputs"]["assurance_telemetry_sha256"]) == 1
-    assert {x["code"] for x in f["findings"] if x["severity"] == "fail"} == {"sampling-below-floor"}
+    assert not [x for x in f["findings"] if x["severity"] == "fail"] and f["effective_sampling"] == 1.0
     assert f["components"]["completeness"]["score"] == 1.0
+    # the sampled stream below the descriptor's own floor
+    report, rc = run_gate(gate_inputs("full", assurance_telemetry=[full], assurance_sampling_rate=1.0, sampling_rate=0.05))
+    assert rc == 1 and {x["code"] for x in report["flows"][0]["findings"] if x["severity"] == "fail"} == {"sampling-below-floor"}
     # non-overlapping windows are a load error (exit 2)
     shifted = tmp_path / "shifted.otlp.jsonl"
     import re

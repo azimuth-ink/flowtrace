@@ -1,0 +1,90 @@
+{
+  "dec_version": "0.2",
+  "head": "sha256:de7a77fb256e39e8c64b6a3ee6cc35a8650974d737daff781fab22cded190a3f",
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "operator.example",
+    "key_id": "k-2026-10"
+  },
+  "kind": "run",
+  "manifest": {
+    "agent_version": "quote-agent/1.0.0",
+    "outcome": "allow",
+    "steps": [
+      {
+        "cert_digest": "sha256:a67b1ed978bc19d059607f5086724d3ee17637d044fb4fbd39f8460a5d568faf",
+        "class": "ND0",
+        "flow_step": "s1",
+        "step_id": "s1",
+        "via": "primary"
+      },
+      {
+        "cert_digest": "sha256:4491103ea3adda20786f4f98e1b7886bd8d7f1a02a12e675a574d752bfb77de2",
+        "class": "ND0",
+        "flow_step": "s2",
+        "step_id": "s2",
+        "via": "primary"
+      },
+      {
+        "cert_digest": "sha256:7af9b3ec0e6d1dff29e8520f2332955a2152d055e9e797415dc3d80c4b9692f3",
+        "class": "ND0",
+        "flow_step": "s3",
+        "step_id": "s3",
+        "via": "primary"
+      },
+      {
+        "cert_digest": "sha256:da4d61a9699c5a0fd08ffc0d781e68328f999b4a128e5d040bd37e76a2b65f28",
+        "class": "ND0",
+        "flow_step": "s4",
+        "step_id": "s4",
+        "via": "primary"
+      },
+      {
+        "cert_digest": "sha256:3b1e0ab6205b83556e021d0f38e6702eeac19a6e0ffd5adf81cb9387fa68e34c",
+        "class": "ND2",
+        "flow_step": "s5",
+        "step_id": "s5",
+        "via": "primary"
+      },
+      {
+        "cert_digest": "sha256:67375fc88ed1383a747469978003fe3c3a558fc5a4b110e49499c9c9eff4e9f5",
+        "class": "ND0",
+        "flow_step": "s6",
+        "step_id": "s6",
+        "via": "on_fail"
+      },
+      {
+        "cert_digest": "sha256:598bf3ea82f679c8f852a6d639aa110e557f7a8232089498e990ba74db640177",
+        "class": "ND2",
+        "flow_step": "s5",
+        "step_id": "s5",
+        "via": "primary"
+      },
+      {
+        "cert_digest": "sha256:65d49037c5bab5e54398244bc489e8a7b66fea24009edbdc7519e361d8a0c707",
+        "class": "ND0",
+        "flow_step": "s6",
+        "step_id": "s6",
+        "via": "primary"
+      }
+    ],
+    "terminated_at": "2026-10-15T07:17:28Z",
+    "termination": "completed"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "Yb9HTbIoYHdvgezS/SnNc91kL5bZzlgveECcQDGj1DBZ07ePVN/GyM3FAW5eryTo+BalzIzuq0h6rIi8i5S3CA=="
+  },
+  "subject": {
+    "flow": {
+      "id": "quote-issue",
+      "version": "2.1.0"
+    },
+    "run_id": "9c873366d679501bca71dc7b8191330b",
+    "trace_id": "9c873366d679501bca71dc7b8191330b"
+  },
+  "time_bounds": {
+    "end": "2026-10-15T07:17:28Z",
+    "start": "2026-10-15T07:17:28Z"
+  }
+}

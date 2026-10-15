@@ -6,7 +6,7 @@ import copy
 import pytest
 import yaml
 
-from conftest import DEC_DIR, TRUST_BUNDLE
+from conftest import CERTIFIED_RUN, DEC_DIR, TRUST_BUNDLE
 from flowtrace.adapters.base import SpanRow
 from flowtrace.conformance import _reading, evaluate, plan_reading
 from flowtrace.coverage import CertificateIndex, index_runs
@@ -28,7 +28,7 @@ spec:
 """)
 
 
-def spans(trace, seq, flow_id="quote-issue", version="2.0.0"):
+def spans(trace, seq, flow_id="quote-issue", version="2.1.0"):
     out, prev = [], None
     for i, step in enumerate(seq):
         sid = f"{trace}-{i}"
@@ -46,7 +46,7 @@ def test_window_readings(canon_flow, adapters):
     index = CertificateIndex([DEC_DIR], TRUST_BUNDLE)
     full = evaluate(canon_flow, runs_of(adapters["full"], canon_flow), index)
     assert full["window"]["reading"] == "convergent" and full["summary"]["by_reading"]["convergent"] == 32
-    cert_run = next(r for r in full["runs"] if r["trace_id"] == "b8e06f909fc7110707032a18b942e128")
+    cert_run = next(r for r in full["runs"] if r["trace_id"] == CERTIFIED_RUN)
     assert cert_run["source"] == "manifest:run.dec.json" and cert_run["realized"] == ["s1", "s2", "s3", "s4", "s5", "s6"]
     assert sum(1 for r in full["runs"] if r["source"] == "spans") == 31
     silent = evaluate(canon_flow, runs_of(adapters["s5-silent"], canon_flow), index)
@@ -114,7 +114,7 @@ def test_run_certificate_binding_notes(canon_flow):
     """A run that references the signed run certificate but is not the run it
     certifies keeps its spans as the realized DAG and is noted."""
     index = CertificateIndex([DEC_DIR], TRUST_BUNDLE)
-    run_digest = next(iter(index.runs))
+    run_digest = next(d for d, (p, c) in index.runs.items() if p == DEC_DIR / "run.dec.json")
     sp = spans("ffff" * 8, ["s1", "s2", "s3", "s4", "s5", "s6"])
     sp[0] = SpanRow(sp[0].trace_id, sp[0].span_id, None, "s1", "SERVER", 0, 5, "OK",
                     dict(sp[0].attributes, **{"dec.run_cert_digest": run_digest}))
@@ -134,8 +134,8 @@ def test_run_certificate_must_verify_and_be_unambiguous(canon_flow, tmp_path):
     run["manifest"]["steps"] = run["manifest"]["steps"][:5]          # drop s6: a lie, and the signature no longer matches
     (d / "run-tampered.dec.json").write_text(json.dumps(run))
     index = CertificateIndex([d], TRUST_BUNDLE)
-    assert len(index.runs_by_run_id["b8e06f909fc7110707032a18b942e128"]) == 2
-    sp = spans("b8e06f909fc7110707032a18b942e128", ["s1", "s2", "s3", "s4", "s5", "s6"])
+    assert len(index.runs_by_run_id[CERTIFIED_RUN]) == 2
+    sp = spans(CERTIFIED_RUN, ["s1", "s2", "s3", "s4", "s5", "s6"])
     r = evaluate(canon_flow, index_runs(sp), index)
     assert r["runs"][0]["source"] == "spans" and "2 distinct run certificates" in r["summary"]["notes"][0]
     # name the tampered one explicitly: it does not verify, so spans remain the realized DAG

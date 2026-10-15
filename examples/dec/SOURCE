@@ -2,14 +2,32 @@
 # canon invariant 3). Copied byte-for-byte from the companion repository:
 #
 #   repository: azimuth-ink/agent-dec
-#   pin:        e8075f9  (v0.2-canon, software 0.2.0)
-#   files:      examples/flow-bound/{run,step-s1..s6}.dec.json  -> flow-bound/
-#               examples/issuer-pubkey.pem                      -> issuer-pubkey.pem
-#               examples/methods/*.json                         -> methods/   (content-addressed; ND0 replay)
+#   pin:        05874ca  (revision 2026-10-11 within v0.2, software 0.2.0; the
+#               example bytes are those of its "Running example v2.1.0" commit)
+#   files:      examples/trust-bundle.json                       -> trust-bundle.json   (dec-trust/0.2: keys[], policy_authorities[], approvers[])
+#               examples/issuer-pubkey.pem                       -> issuer-pubkey.pem
+#               examples/methods/*.json                          -> methods/            (content-addressed; ND0 replay; the hosted configuration record)
+#               examples/flow-bound/*.dec.json, disclosure/      -> flow-bound/         (the §4.4 run: s1..s5, authorization, s6, completion; run.dec.json)
+#               examples/flow-bound/variants/{s5-degraded,s6-reconciled,s6-approval}/
+#                                                                -> flow-bound/variants/
+#               examples/flow-bound/cancelled/{parent,child}/    -> flow-bound/cancelled/
+#               examples/flow-bound/negative/**                  -> flow-bound/negative/ (the Wave 2 flow-binding negative with its evidence members, and
+#                                                                   latched-reentry, retry-without-reconciliation, effect-without-authorization,
+#                                                                   cancellation-not-propagated, sod-violation, approval-payload-mismatch,
+#                                                                   claim-commitment-mismatch)
+#               examples/hosted/                                 -> hosted/             (one hosted ND1 step, evidence configuration_record)
 #
-# trust-bundle.json is a dec-trust/0.2 bundle built by flowtrace from that
-# public key (agent-dec ships the example's issuer key as a bare PEM, not as a
-# bundle): issuer operator.example, key k-2026-10, active, not_before
-# 2026-10-01T00:00:00Z, flow_registries[] pointing at ../flows/. A test
-# (tests/test_fixtures.py) asserts the PEM inside the bundle equals the
-# sibling repository's examples/issuer-pubkey.pem when that checkout exists.
+# Not copied: examples/flow-bound/flows/quote-issue.flow.yaml — flowtrace's
+# registry for these runs is examples/flows/ (the same bytes, canon §7.1,
+# sha256 bcbf43158c31ab7b5ca5dde55de1fe48c81891eacc05def4f1d188a49beb148b; CI
+# checks the three copies with cmp), and the cargo-load-margin run at
+# examples/ (not flow-bound).
+#
+# The trust bundle is agent-dec's own (sha256
+# c8d2d734cf2c15168be841424edeff9e15828760daaf2cf3c8ef5d65a7403fe9); it
+# carries no flow_registries[], so the verifier is given --flow-registry
+# examples/flows explicitly. Every digest the synthetic telemetry carries
+# (dec.step_cert_digest, dec.run_cert_digest, dec.authz_cert_digest,
+# dec.completion_cert_digest, dec.approval_digest) is recomputed from these
+# files with RFC 8785 by tools/make_synthetic_telemetry.py and cross-checked
+# against the run manifests.

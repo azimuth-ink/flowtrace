@@ -48,3 +48,25 @@ alerts:
     threshold: 0.01
     evaluation_window_s: 30
     notification_latency_s: 15
+  # Revision 2026-10-11 (FTC §4.5; spec §6.7): the two-sided indicators' band
+  # bounds become detectability targets when an alert names them. The band
+  # itself lives in flowtrace.yaml (slis.*.flows.quote-issue); an alert
+  # watches one bound (`bound: max`, the default, fires when the rate rises
+  # above its threshold; `bound: min` when it falls below). Its threshold must
+  # be at least as tight as the bound.
+  - id: quote-issue-degradation-rate-high
+    flow: quote-issue
+    scope: flow
+    slo: degradation_rate        # runs that took any declared on_fail edge / runs; band max 0.25
+    bound: max
+    threshold: 0.25
+    evaluation_window_s: 30
+    notification_latency_s: 15
+  - id: quote-issue-veto-rate-high
+    flow: quote-issue
+    scope: flow
+    slo: veto_rate               # runs whose outcome is block / runs; band max 0.10
+    bound: max
+    threshold: 0.10
+    evaluation_window_s: 30
+    notification_latency_s: 15

@@ -16,10 +16,10 @@
     "type": "replay_recipe"
   },
   "inputs": {
-    "commitment": "sha256:0ef76d16747af03253bcc13bbe62e71e174a0103eb1676083a0d677821e60bb6",
+    "commitment": "sha256:bd646a60e646849812f06a41c72683cb8270422986e7e401604815409b03b2d3",
     "scheme": "salted-jcs-sha256"
   },
-  "issued_at": "2026-10-11T02:00:54Z",
+  "issued_at": "2026-10-15T07:17:28Z",
   "issuer": {
     "id": "operator.example",
     "key_id": "k-2026-10"
@@ -30,22 +30,23 @@
     "version": "1.0.0"
   },
   "outputs": {
-    "commitment": "sha256:e80dc35a8573f6641035a376526c06f9277aaa64de69828d9125f1b4ec15952f",
+    "commitment": "sha256:b12c8b4651dd65b0d9e063c1997c1805e6a394ee436b0ab7cfd548ea5e7ea61c",
     "scheme": "salted-jcs-sha256"
   },
   "signature": {
     "alg": "Ed25519",
-    "value": "ItkV0sXyeJkeUokWBy+7oSbzUxfPJmmHFT1PdFPcq61IusnZwaGSmto0RCKUrdqiZhAe/k7RH8LCaJEnWRKVCw=="
+    "value": "wWG823UCB1oU7nsggS664EncU68I5nJLS6Sl5kb7MHo+EkKYeVrgBRYMu7jeIWiQxxFF3ygCpy0KmlHckUafDg=="
   },
   "subject": {
     "class": "ND0",
     "flow": {
       "id": "quote-issue",
       "step": "s1",
-      "version": "2.0.0"
+      "version": "2.1.0"
     },
-    "run_id": "b8e06f909fc7110707032a18b942e128",
+    "run_id": "5c7cd4e0ca5f44d0f0a85af952bff581",
     "step_id": "s1",
-    "trace_id": "b8e06f909fc7110707032a18b942e128"
+    "task_grant_commitment": "sha256:44705a4500885e0a01dc698b1c40cc7aa2a86577a29a5496d17e9f09ce25f334",
+    "trace_id": "5c7cd4e0ca5f44d0f0a85af952bff581"
   }
 }

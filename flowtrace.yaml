@@ -90,10 +90,12 @@ scoring:
 slis:
   degradation_rate:
     band: { min: 0.0, max: 1.0, gate: false }
-    flows: {}
+    flows:
+      quote-issue: { band: { min: 0.0, max: 0.25, gate: false } }   # the running example: more than a quarter of runs degrading is a quality signal
   veto_rate:
     band: { min: 0.0, max: 1.0, gate: false }
-    flows: {}
+    flows:
+      quote-issue: { band: { min: 0.0, max: 0.10, gate: false } }   # s4 (ND0) blocking more than a tenth of runs is a quality signal
 
 # ---------------------------------------------------------------------------
 # FTC §4.8 (revision 2026-10-11) — cancellation propagation across runs

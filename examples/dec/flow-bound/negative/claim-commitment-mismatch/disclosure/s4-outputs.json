@@ -1,0 +1,9 @@
+{
+  "fields": {
+    "/decision": "57620c4990424a0b1fc70224869d61ce"
+  },
+  "payload": {
+    "decision": "approve"
+  },
+  "salt": "77c552d8238f6d2b2c93217ba9b05831"
+}

@@ -1,0 +1,58 @@
+{
+  "chain": {
+    "position": 3,
+    "prev": "sha256:8a06a76bc194aff8e037931883a16f65bb98d36a4d6ac6c67ee32fb54e818b9f"
+  },
+  "children": [
+    {
+      "run_id": "ab026d1673f96f3b9509ff810506802a",
+      "task_grant_commitment": "sha256:3ca2b2c38c1ca4777c0617dfbda651cc1ad236226bc9dc7102407304b3103ece"
+    }
+  ],
+  "dec_version": "0.2",
+  "environment": {
+    "image_digest": "sha256:7ba451133c403e85ee98073f28fd640bc9aa5000f0d6fce0f0b06ff7ac4cd9c5",
+    "runtime": "det-runtime/1.4"
+  },
+  "evidence": {
+    "detail": {
+      "replay": "bit",
+      "runtime_constraints": "det-runtime-profile-1"
+    },
+    "type": "replay_recipe"
+  },
+  "inputs": {
+    "commitment": "sha256:71e1c63666a1a42f8c17d6d13b47d167bef772e9c218bf8b70fbc690c3a17ce7",
+    "scheme": "salted-jcs-sha256"
+  },
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "operator.example",
+    "key_id": "k-2026-10"
+  },
+  "method": {
+    "digest": "sha256:6217a5ed9206e3fed060997e396d9be4f8951a2bb51c89ba2d5f525e7bf25f7b",
+    "ref": "methods/rate-card-price",
+    "version": "1.0.0"
+  },
+  "outputs": {
+    "commitment": "sha256:64896e943162860b2b2604cb2af7ecbdb1f0057b184929893829415525afcd72",
+    "scheme": "salted-jcs-sha256"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "Rsya5FB7M4jVC6HaH70EOs2b8P3bvCAlCtcpo35baSDMa6Gfuf06E7V6E0Cow132FiwoiCRvJqaIgh6Z+2+sAA=="
+  },
+  "subject": {
+    "class": "ND0",
+    "flow": {
+      "id": "quote-issue",
+      "step": "s3",
+      "version": "2.1.0"
+    },
+    "run_id": "e22cc194a2e9ee438c26b056a13169e6",
+    "step_id": "s3",
+    "task_grant_commitment": "sha256:929ad30365ea7da181d5a55b493f0a66f26320350abdc479a03da42b568277b9",
+    "trace_id": "e22cc194a2e9ee438c26b056a13169e6"
+  }
+}

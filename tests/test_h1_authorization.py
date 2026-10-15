@@ -27,7 +27,13 @@ def test_b10_is_unchecked_from_spans(degrading_flow, canon_flow):
     assert r["summary"]["unchecked"] == ["effect-without-authorization (B10): unchecked for 1 span-sourced run(s) (no certificates to read it from)"]
     assert all(run["findings"] == [] for run in r["runs"])
     # no effect step declared: nothing to check
-    assert evaluate(canon_flow, index_runs(spans("t1", PRIMARY, "2.0.0")), None)["summary"]["unchecked"] == []
+    import copy
+    from flowtrace.flows import Flow
+    doc = copy.deepcopy(canon_flow.doc)
+    for s in doc["spec"]["steps"]:
+        s.pop("effect", None)
+        s.pop("attempts", None)
+    assert evaluate(Flow(canon_flow.path, doc, "0" * 64), index_runs(spans("t1", PRIMARY)), None)["summary"]["unchecked"] == []
 
 
 @pytest.mark.skipif(w3_dec() is None, reason="the 2026-10-11 signed example set is not available")

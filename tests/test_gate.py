@@ -6,7 +6,7 @@ import pathlib
 
 import pytest
 
-from conftest import CONFIG, EXPECTED, FLOWS, WINDOWS, telemetry
+from conftest import CONFIG, DEC_DIR, EXPECTED, FLOWS, PASSING_WINDOWS, WINDOWS, telemetry
 from flowtrace.gate import GateUsageError, format_summary, run_gate
 from flowtrace.report import dumps, validate_report
 
@@ -29,21 +29,29 @@ def normalize(report: dict) -> dict:
     return r
 
 
+def window_inputs(gate_inputs, window, **over):
+    """What the Makefile / CI pass per window: the full report as baseline for
+    every other window, and --runs-dir for the cancelled parent's child."""
+    base = dict(baseline=None if window == "full" else str(EXPECTED / "quote-issue.full.json"))
+    if window == "cancelled-child-late":
+        base["runs_dirs"] = [str(DEC_DIR / "negative" / "cancellation-not-propagated")]
+    base.update(over)
+    return gate_inputs(window, **base)
+
+
 @pytest.mark.parametrize("window", WINDOWS)
 def test_gate_reproduces_the_expected_report_byte_for_byte(gate_inputs, window, tmp_path):
-    baseline = None if window == "full" else str(EXPECTED / "quote-issue.full.json")
-    inp = gate_inputs(window, baseline=baseline)
+    inp = window_inputs(gate_inputs, window)
     report, rc = run_gate(inp)
     expected = (EXPECTED / f"quote-issue.{window}.json").read_bytes()
     assert pathlib.Path(inp.out).read_bytes() == expected
     assert dumps(report).encode() == expected
-    assert rc == (0 if window == "full" else 1)
+    assert rc == (0 if window in PASSING_WINDOWS else 1)
 
 
 @pytest.mark.parametrize("window", WINDOWS)
 def test_non_reproducible_report_normalizes_to_the_expected_one(gate_inputs, window):
-    baseline = None if window == "full" else str(EXPECTED / "quote-issue.full.json")
-    report, _ = run_gate(gate_inputs(window, baseline=baseline, reproducible=False))
+    report, _ = run_gate(window_inputs(gate_inputs, window, reproducible=False))
     assert report["generated_at"].endswith("Z")
     assert report["inputs"]["flows_commit"] is None or len(report["inputs"]["flows_commit"]) == 40
     assert normalize(report) == json.loads((EXPECTED / f"quote-issue.{window}.json").read_text())
@@ -87,7 +95,7 @@ def test_baseline_deltas_and_regression_finding(gate_inputs, tmp_path):
     assert any(f["code"] == "tier-threshold-regression" for f in silent["flows"][0]["findings"])
     text = format_summary(silent)
     assert "delta vs baseline   score 1.0000 -> 0.6333 (-0.3667)" in text
-    assert "GATE quote-issue@2.0.0 [P0]: score 0.6333 < threshold 1.00 — FAIL" in text
+    assert "GATE quote-issue@2.1.0 [P0]: score 0.6333 < threshold 1.00 — FAIL" in text
     assert "VERDICT: FAIL" in text
     # the same window against itself: no decrease, no regression finding
     again, _ = run_gate(gate_inputs("s5-silent", baseline=str(gate_inputs("s5-silent").out), out=str(tmp_path / "again.json")))
@@ -116,9 +124,15 @@ def test_four_component_mode_without_execution_evidence(gate_inputs):
 
 
 def test_sampling_floor_and_missing_alerts(gate_inputs):
+    # the 2.1.0 descriptor declares an assurance stream: with one export its assumed rate is the sampled rate, and 0.5
+    # is below the effective assurance floor (tier P0 1.0); the sampled stream's own floor (0.10) is met
     report, rc = run_gate(gate_inputs("full", sampling_rate=0.5, alerts=None))
     f = report["flows"][0]
-    assert rc == 1 and {x["code"] for x in f["findings"] if x["severity"] == "fail"} == {"sampling-below-floor"}
+    assert rc == 1 and {x["code"] for x in f["findings"] if x["severity"] == "fail"} == {"assurance-sampling-below-floor"}
+    assert f["effective_sampling"] == 0.5 and f["streams"]["assurance"]["effective_floor"] == 1.0
+    # the assurance stream at 1.0 lets the sampled stream run at the descriptor's floor
+    report, rc = run_gate(gate_inputs("full", sampling_rate=0.1, assurance_sampling_rate=1.0))
+    assert rc == 0 and report["flows"][0]["effective_sampling"] == 1.0
     assert f["components"]["detectability"]["score"] == 0.0 and f["components"]["detectability"]["reason"].startswith("no alert configuration")
     assert f["score"] == pytest.approx(0.8)
 

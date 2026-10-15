@@ -1,7 +1,7 @@
 {
   "dec_version": "0.2",
-  "head": "sha256:b664a461c154d329f7578befc8db6d4a7ae0756b63e5a217280889d4dc14a851",
-  "issued_at": "2026-10-11T02:00:54Z",
+  "head": "sha256:c9f57bae3c174e69693a07c33842d0d0925adecbfeb5392bfe05dbeeeb23d21a",
+  "issued_at": "2026-10-15T07:17:28Z",
   "issuer": {
     "id": "operator.example",
     "key_id": "k-2026-10"
@@ -9,59 +9,68 @@
   "kind": "run",
   "manifest": {
     "agent_version": "quote-agent/1.0.0",
+    "outcome": "allow",
     "steps": [
       {
-        "cert_digest": "sha256:ce7d580ca8f2744bf9a5c890ff7fed82e937d34222ffe2ed1968c27332888ed2",
+        "cert_digest": "sha256:eeaa0cdccb9879993295c50379cfea9f56b975413ee0c3f88cb7d19d1391b8d7",
         "class": "ND0",
         "flow_step": "s1",
-        "step_id": "s1"
+        "step_id": "s1",
+        "via": "primary"
       },
       {
-        "cert_digest": "sha256:ee78a541adafc81231a5e6f27ad61038f38fa7367d2f0e29dc17483820d1a381",
+        "cert_digest": "sha256:b34ca6475e7cfe99a7dd9882b05949497bdf3be1a202f6bc94d842d7a3e14030",
         "class": "ND0",
         "flow_step": "s2",
-        "step_id": "s2"
+        "step_id": "s2",
+        "via": "primary"
       },
       {
-        "cert_digest": "sha256:ab454dcce89501c6dff276de0805a4b56a58020e23f30a35d7901d7fd395538d",
+        "cert_digest": "sha256:d4cd549708f1be4a5831814098290e876618fd15f4f6d15298126bacf3577b40",
         "class": "ND0",
         "flow_step": "s3",
-        "step_id": "s3"
+        "step_id": "s3",
+        "via": "primary"
       },
       {
-        "cert_digest": "sha256:752aa16d1475618577e1631732fc02edffb51f25c5db714d550c98aa8d179659",
+        "cert_digest": "sha256:9c2729352e998d16f69920dc726b72bbf722f2bb326d927c6d90146eb87fc143",
         "class": "ND0",
         "flow_step": "s4",
-        "step_id": "s4"
+        "step_id": "s4",
+        "via": "primary"
       },
       {
-        "cert_digest": "sha256:1a1df7f960e68b996708d6bbaa3f5b248ff17fb28ffb65e2726c2607fa8d6a9b",
+        "cert_digest": "sha256:ff1a6cfbd31b3e69cb5a77e8fd2cba5cfc87eb1d9377a9b940f3caa16634fe78",
         "class": "ND2",
         "flow_step": "s5",
-        "step_id": "s5"
+        "step_id": "s5",
+        "via": "primary"
       },
       {
-        "cert_digest": "sha256:b664a461c154d329f7578befc8db6d4a7ae0756b63e5a217280889d4dc14a851",
+        "cert_digest": "sha256:ef3ce00507d2b2499b51083b0954d9ba5468b26a08396699fcca26169d56281d",
         "class": "ND0",
         "flow_step": "s6",
-        "step_id": "s6"
+        "step_id": "s6",
+        "via": "primary"
       }
-    ]
+    ],
+    "terminated_at": "2026-10-15T07:17:28Z",
+    "termination": "completed"
   },
   "signature": {
     "alg": "Ed25519",
-    "value": "NKCAfwM+F+F/8PsiQtsBxU32vsCJiTrwYpjgyCVr5goVKUzSE3Eplg5RuPWodC6UxK6qiDY8t3KJTR1hEy/0DA=="
+    "value": "aPNShSDePz5mnZi+u59XN52ODExvRtAJZ/oCxG9EDVxEhC4t9BwpTfRjThzjeMCHC9GIfEYuPJZPV3a4jmAhBg=="
   },
   "subject": {
     "flow": {
       "id": "quote-issue",
-      "version": "2.0.0"
+      "version": "2.1.0"
     },
-    "run_id": "b8e06f909fc7110707032a18b942e128",
-    "trace_id": "b8e06f909fc7110707032a18b942e128"
+    "run_id": "5c7cd4e0ca5f44d0f0a85af952bff581",
+    "trace_id": "5c7cd4e0ca5f44d0f0a85af952bff581"
   },
   "time_bounds": {
-    "end": "2026-10-11T02:00:54Z",
-    "start": "2026-10-11T02:00:54Z"
+    "end": "2026-10-15T07:17:28Z",
+    "start": "2026-10-15T07:17:28Z"
   }
 }

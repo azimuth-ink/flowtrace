@@ -1,0 +1,83 @@
+{
+  "chain": {
+    "position": 5,
+    "prev": "sha256:a4f70108dd2ed7c6bc78a4638813ba66beee80710cf4c61f8a95c0f397672783"
+  },
+  "claims": [
+    {
+      "commitment": "sha256:f81ba619bc1f949d6213290fd7c3a6a7b5bcd1926e082b58ce0cb020aef3507a",
+      "kind": "value",
+      "ref": {
+        "path": "/decision",
+        "step_id": "s4"
+      }
+    },
+    {
+      "commitment": "sha256:a2bd272d9f174b762b60c593c765d322644d9560657f39b3cf04d51d89d85149",
+      "kind": "citation",
+      "ref": {
+        "step_id": "s3"
+      }
+    }
+  ],
+  "dec_version": "0.2",
+  "environment": {
+    "image_digest": "sha256:7ba451133c403e85ee98073f28fd640bc9aa5000f0d6fce0f0b06ff7ac4cd9c5",
+    "model": {
+      "id": "example-lm",
+      "params": {
+        "max_tokens": 1024,
+        "temperature": 0.2,
+        "top_p": 0.9
+      },
+      "version": "2026-06"
+    },
+    "runtime": "agent-runtime/2.1"
+  },
+  "evidence": {
+    "detail": {
+      "contract": "quote-document.v1",
+      "freshness": "2026-10-01",
+      "probes": {
+        "agreement": 0.96,
+        "runs": 5
+      },
+      "suite_digest": "sha256:ad4918940a5d81c1ce4e46b4285b1f01a72569ad24b00c4a0283ac0964e6fbf1"
+    },
+    "type": "conformance_report"
+  },
+  "inputs": {
+    "commitment": "sha256:e5a09fcf2ae3849449bb17198ef980b6cf6b884a80290375f54b3157c0c5acf9",
+    "scheme": "salted-jcs-sha256"
+  },
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "operator.example",
+    "key_id": "k-2026-10"
+  },
+  "method": {
+    "digest": "sha256:61dc2346928881a7f10044bab27c96f2e6a78c6fc30634b112ab0e4ab6704278",
+    "ref": "prompts/quote-document",
+    "version": "1.0.0"
+  },
+  "outputs": {
+    "commitment": "sha256:ea53f7ce619e42da57370965bf800652d8ce4c2d13e98c873220c472b1c3bb7b",
+    "scheme": "salted-jcs-sha256"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "UsbL9yRqcAzIlZsD7csRDFIfHYSsSzt7btZoVmyNSDqdCz7qF60q+3jRcjRmKLope0iINlBQYyqQBXXB9fQOCA=="
+  },
+  "subject": {
+    "class": "ND2",
+    "flow": {
+      "id": "quote-issue",
+      "step": "s5",
+      "version": "2.1.0"
+    },
+    "run_id": "7b16047223ba04ca17ea1ca09e68d09f",
+    "step_id": "s5",
+    "task_grant_commitment": "sha256:f6a207b4188c07cb938b754f4aa2e3e2ec0806e3abd27e3a3722a07f40c37ad1",
+    "trace_id": "7b16047223ba04ca17ea1ca09e68d09f"
+  }
+}

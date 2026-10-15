@@ -1,0 +1,35 @@
+{
+  "chain": {
+    "position": 8,
+    "prev": "sha256:aa8dff69f4e65be7a92b99d8ed0ae90a4cc8cc19b90045be08ec3a0cf4113d16"
+  },
+  "dec_version": "0.2",
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "operator.example",
+    "key_id": "k-2026-10"
+  },
+  "kind": "completion",
+  "outputs": {
+    "commitment": "sha256:3149a6a10a01fb381f6581c6a8335f2dc08f1fb5df6289c30eac8833a9a27832",
+    "scheme": "salted-jcs-sha256"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "value": "LVHrldO3x9Qc5dOJh80nInY/7WIp4Q7E7k7za9UyWiK5ShI5Oci+pgyhsH4LZ6vRx82S4Baoow8ykS6j8XHaAw=="
+  },
+  "status": "unknown",
+  "subject": {
+    "attempt_id": 1,
+    "flow": {
+      "id": "quote-issue",
+      "step": "s6",
+      "version": "2.1.0"
+    },
+    "idempotency_key_commitment": "sha256:9d8c51e21259391ee1b3437cee4ab3413ac03b466c3625f1eff35a2c7d9f2280",
+    "run_id": "7b16047223ba04ca17ea1ca09e68d09f",
+    "step_id": "s6",
+    "task_grant_commitment": "sha256:f6a207b4188c07cb938b754f4aa2e3e2ec0806e3abd27e3a3722a07f40c37ad1",
+    "trace_id": "7b16047223ba04ca17ea1ca09e68d09f"
+  }
+}

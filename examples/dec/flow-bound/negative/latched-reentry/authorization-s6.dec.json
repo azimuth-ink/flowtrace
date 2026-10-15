@@ -1,0 +1,40 @@
+{
+  "chain": {
+    "position": 6,
+    "prev": "sha256:3b1e0ab6205b83556e021d0f38e6702eeac19a6e0ffd5adf81cb9387fa68e34c"
+  },
+  "dec_version": "0.2",
+  "decision": {
+    "as_of": "2026-10-15T07:17:28Z",
+    "decision": "allow",
+    "decision_id": "d-4203af966bdf",
+    "policy_version": "sha256:b742d5b14fba6c11c37aeecb274322c4799784bce43ebdf3fd80401c9ccf432c"
+  },
+  "intended_inputs": {
+    "commitment": "sha256:eed424eb7777f83a9fedad6fed90684a8b761547fd6f3d79fe37aa53ceb3f5f6",
+    "scheme": "salted-jcs-sha256"
+  },
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "policy.operator.example",
+    "key_id": "p-2026-10"
+  },
+  "kind": "authorization",
+  "signature": {
+    "alg": "Ed25519",
+    "value": "VcS1w4LI8wQjPdAwV8bBPnHlZa9a4+v3cCYZxUlN30HjC6OXj8drT0kPUtOvU2hbEthM9ZNd1hyUAGF6yvy6Aw=="
+  },
+  "subject": {
+    "attempt_id": 1,
+    "flow": {
+      "id": "quote-issue",
+      "step": "s6",
+      "version": "2.1.0"
+    },
+    "idempotency_key_commitment": "sha256:5646efd32969b1de29658e79a0baeac1a31c6dfd604de835d5da153ccd7d3faf",
+    "run_id": "9c873366d679501bca71dc7b8191330b",
+    "step_id": "s6",
+    "task_grant_commitment": "sha256:4244e16ef8e11d13e96e84f34a1b5f9ddf217de958db34fc2daaae23d0cbd097",
+    "trace_id": "9c873366d679501bca71dc7b8191330b"
+  }
+}

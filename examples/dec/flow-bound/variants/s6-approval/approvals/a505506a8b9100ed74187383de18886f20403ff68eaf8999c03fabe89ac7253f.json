@@ -1,0 +1,31 @@
+{
+  "dec_version": "0.2",
+  "intended_action": {
+    "commitment": "sha256:23fbdc52c7a5a6e190a00083160ebf150c5466fb1c3d2ea3a82297760ea686b8",
+    "scheme": "salted-jcs-sha256"
+  },
+  "issued_at": "2026-10-15T07:17:28Z",
+  "issuer": {
+    "id": "approver:a.example",
+    "key_id": "a-2026-10"
+  },
+  "kind": "attestation",
+  "signature": {
+    "alg": "Ed25519",
+    "value": "P7S4g5NwMTVOnV/NP0HQ0EGBryS/vTadWw62pyN/t/l27qQB89skv2+/6ULI/1iaSMFUVdlgGSX0moPcrbPkCw=="
+  },
+  "subject": {
+    "flow": {
+      "id": "quote-issue",
+      "step": "s6",
+      "version": "2.1.0"
+    },
+    "run_id": "3e1a48e95d801ea89d64a86280cbdda4",
+    "task_grant_commitment": "sha256:dc125f2a2e8a46e7ca6e47996430bb92c35bcc959b711286629ac18cbd8a9e98"
+  },
+  "type": "human_approval",
+  "validity": {
+    "not_after": "2026-10-15T08:17:28Z",
+    "not_before": "2026-10-15T07:16:28Z"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "payload": {
+    "request": {
+      "quantity": 3,
+      "sku": "QT-1000"
+    }
+  },
+  "salt": "c9eb3191ab30b6b16b01a028710b819c"
+}

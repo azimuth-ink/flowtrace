@@ -33,7 +33,13 @@ def entries(seq):
 
 # ----------------------------------------------------------------- descriptor helpers
 def test_outcomes_default_and_declared(canon_flow, degrading_flow):
-    assert canon_flow.outcomes == list(DEFAULT_OUTCOMES) and canon_flow.declares_degradation is False
+    plain = copy.deepcopy(canon_flow.doc)
+    plain["spec"].pop("outcomes")
+    for s in plain["spec"]["steps"]:
+        s.pop("on_fail", None)
+    plain = Flow(canon_flow.path, plain, "0" * 64)
+    assert plain.outcomes == list(DEFAULT_OUTCOMES) and plain.declares_degradation is False
+    assert canon_flow.outcomes == ["allow", "block", "clarify", "review", "error"] and canon_flow.declares_degradation
     assert degrading_flow.outcomes == ["allow", "block", "clarify", "review", "error"] and degrading_flow.declares_degradation
     doc = copy.deepcopy(degrading_flow.doc)
     doc["spec"]["outcomes"] = ["ok", "stop"]
@@ -42,7 +48,7 @@ def test_outcomes_default_and_declared(canon_flow, degrading_flow):
     f = Flow(degrading_flow.path, doc, "0" * 64)
     assert f.outcomes == list(DEFAULT_OUTCOMES) and f.declares_degradation      # on_fail edges alone qualify
     assert degrading_flow.cancel_propagation_s == 30.0 and degrading_flow.max_decision_age_s == 300.0
-    assert canon_flow.cancel_propagation_s is None and canon_flow.max_decision_age_s is None
+    assert plain.cancel_propagation_s == 30.0 and canon_flow.max_decision_age_s == 300.0
     assert degrading_flow.next_of("s5") == ["s6"] and degrading_flow.next_of("s6") == []
 
 
@@ -185,13 +191,19 @@ def test_slis_rates_bands_and_sources(degrading_flow, canon_flow, cfg):
     assert s["degradation_rate"]["rate"] == 0.5 and s["degradation_rate"]["degraded_runs"] == 2
     assert s["veto_rate"]["rate"] == 0.25 and s["veto_rate"]["vetoed_runs"] == 1
     assert s["degradation_rate"]["source"] == "spans" and s["degradation_rate"]["approximate"] is True
-    assert s["degradation_rate"]["band"] == {"min": 0.0, "max": 1.0, "gate": False} and s["degradation_rate"]["out_of_band"] is None
+    assert s["degradation_rate"]["band"] == {"min": 0.0, "max": 0.25, "gate": False} and s["degradation_rate"]["out_of_band"] == "above"   # the shipped quote-issue band
+    assert s["veto_rate"]["band"] == {"min": 0.0, "max": 0.10, "gate": False} and s["veto_rate"]["out_of_band"] == "above"
     assert s["degradation_rate"]["notes"] == [] or s["degradation_rate"]["notes"][0].startswith("shared-target")
     # a flow without outcomes or on_fail reports no indicators
-    assert evaluate_slis(canon_flow, evaluate(canon_flow, index_runs(spans("a", PRIMARY, "2.0.0")), None), cfg) is None
+    plain = copy.deepcopy(canon_flow.doc)
+    plain["spec"].pop("outcomes")
+    for st in plain["spec"]["steps"]:
+        st.pop("on_fail", None)
+    plain = Flow(canon_flow.path, plain, "0" * 64)
+    assert evaluate_slis(plain, evaluate(plain, index_runs(spans("a", PRIMARY)), None), cfg) is None
     # no runs: rates 0, source none
     s = evaluate_slis(degrading_flow, evaluate(degrading_flow, {}, None), cfg)
-    assert s["veto_rate"] == {"rate": 0.0, "band": {"min": 0.0, "max": 1.0, "gate": False}, "source": "none", "approximate": False,
+    assert s["veto_rate"] == {"rate": 0.0, "band": {"min": 0.0, "max": 0.10, "gate": False}, "source": "none", "approximate": False,
                               "runs": 0, "vetoed_runs": 0, "out_of_band": None, "notes": []}
 
 
@@ -199,6 +211,7 @@ def test_sli_bands_per_flow_and_out_of_band_both_directions(degrading_flow, cfg)
     over = copy.deepcopy(cfg)
     over["slis"]["veto_rate"]["band"] = {"min": 0.0, "max": 0.1}
     over["slis"]["degradation_rate"]["flows"] = {"quote-issue": {"band": {"min": 0.6, "max": 0.9, "gate": True}}}
+    over["slis"]["veto_rate"]["flows"] = {}
     assert sli_band(over, "quote-issue", "veto_rate") == {"min": 0.0, "max": 0.1, "gate": False}
     assert sli_band(over, "quote-issue", "degradation_rate") == {"min": 0.6, "max": 0.9, "gate": True}
     assert sli_band(over, "other", "degradation_rate") == {"min": 0.0, "max": 1.0, "gate": False}
@@ -253,23 +266,20 @@ def test_reading_finding_codes(degrading_flow):
 
 
 def _window_210(tmp_path):
-    """The full window re-labelled flow.version 2.1.0 (the synthetic windows
-    carry the version of examples/flows at generation time)."""
+    """The full window (flow.version 2.1.0, as examples/flows declares)."""
     from conftest import telemetry
-    src = telemetry("full").read_text(encoding="utf-8")
-    out = tmp_path / "full-2.1.0.otlp.jsonl"
-    out.write_text(src.replace('{"key":"flow.version","value":{"stringValue":"2.0.0"}}', '{"key":"flow.version","value":{"stringValue":"2.1.0"}}'))
-    return out
+    return telemetry("full")
 
 
 def test_sli_band_bounds_as_detectability_targets(degrading_flow, cfg, tmp_path):
     over = copy.deepcopy(cfg)
-    over["slis"]["degradation_rate"]["band"] = {"min": 0.1, "max": 0.4}
-    over["slis"]["veto_rate"]["band"] = {"min": 0.0, "max": 0.2}
+    over["slis"]["degradation_rate"] = {"band": {"min": 0.1, "max": 0.4}}
+    over["slis"]["veto_rate"] = {"band": {"min": 0.0, "max": 0.2}}
     runs = index_runs(spans("a", PRIMARY) + spans("b", PRIMARY[:4]) + spans("c", PRIMARY[:3]) + spans("d", PRIMARY))
     slis = evaluate_slis(degrading_flow, evaluate(degrading_flow, runs, None), over)
     alerts = load_alerts(ALERTS)
-    r = evaluate_detectability(degrading_flow, runs, alerts, 60, slis=slis)
+    slo_alerts = [a for a in alerts if a["slo"] not in ("degradation_rate", "veto_rate")]     # the shipped file also covers the two bands
+    r = evaluate_detectability(degrading_flow, runs, slo_alerts, 60, slis=slis)
     sli_rows = [t for t in r["targets"] if t["slo"] in ("degradation_rate", "veto_rate")]
     assert [(t["slo"], t["bound"], t["target"]) for t in sli_rows] == [("degradation_rate", "max", 0.4), ("degradation_rate", "min", 0.1), ("veto_rate", "max", 0.2)]
     assert all(not t["detectable"] and t["reason"].startswith("no alert configured for the") for t in sli_rows)
@@ -288,5 +298,11 @@ def test_sli_band_bounds_as_detectability_targets(degrading_flow, cfg, tmp_path)
     with pytest.raises(ValueError, match="bound"):
         load_alerts(p)
     # a whole-range band adds no target
-    assert not [t for t in evaluate_detectability(degrading_flow, runs, alerts, 60, slis=evaluate_slis(degrading_flow, evaluate(degrading_flow, runs, None), cfg))["targets"]
+    whole = copy.deepcopy(cfg)
+    whole["slis"] = {"degradation_rate": {"band": {}}, "veto_rate": {"band": {}}}
+    assert not [t for t in evaluate_detectability(degrading_flow, runs, slo_alerts, 60, slis=evaluate_slis(degrading_flow, evaluate(degrading_flow, runs, None), whole))["targets"]
                 if t["slo"] in ("degradation_rate", "veto_rate")]
+    # the shipped alerts cover the shipped quote-issue bands' upper bounds
+    shipped = evaluate_detectability(degrading_flow, runs, alerts, 60, slis=evaluate_slis(degrading_flow, evaluate(degrading_flow, runs, None), cfg))
+    assert [(t["slo"], t["bound"], t["detectable"]) for t in shipped["targets"] if t["slo"] in ("degradation_rate", "veto_rate")] == [
+        ("degradation_rate", "max", True), ("veto_rate", "max", True)]
