@@ -434,6 +434,9 @@ def evaluate(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None
                 outcome = "unknown"
                 r["degraded"] = [d + " [spans]" for d in r["degraded"]]
         entries = r.get("entries") or _collapse_attempts(_entries(realized))
+        if cert is None and any(e["flow_step"] in attempts_by_step for e in entries):
+            # [H1] from spans alone B10 cannot be read: the effect step's span is a §6.6 status, the rule is unchecked
+            unchecked["effect-without-authorization (B10)"] = unchecked.get("effect-without-authorization (B10)", 0) + 1
         for e in entries:
             sid = e["flow_step"]
             if sid in attempts_by_step:
@@ -483,10 +486,13 @@ def evaluate(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None
     }
 
 
-# The step-1d findings this unit reads from agent-dec's verifier (spec §7.5):
-# binding B17, reconciliation before retry. Later units extend the tuple.
-READ_FINDINGS = ("retry-without-reconciliation",)
-DIVERGENT_FINDINGS = ("retry-without-reconciliation",)
+# The step-1d findings this engine reads from agent-dec's verifier: [H4]
+# binding B17 (spec §7.5); [H1] binding B10 and the authorization window /
+# freshness findings (spec §7.6; the latter two are §6.6 statuses passed
+# through, never re-derived). Later units extend the tuples.
+READ_FINDINGS = ("retry-without-reconciliation", "effect-without-authorization", "authorization-expired", "authorization-stale")
+DIVERGENT_FINDINGS = ("retry-without-reconciliation", "effect-without-authorization")
+UNCHECKED_FROM_SPANS = (("retry-without-reconciliation (B17)", "retries"), ("effect-without-authorization (B10)", "effect"))
 
 
 def _manifest_entry(m: Mapping[str, Any], index: CertificateIndex | None) -> dict:
@@ -512,7 +518,11 @@ def _verifier_findings(index: CertificateIndex, run_dir, codes: Sequence[str]) -
             continue
         doc = index.member(run_dir / file_name) or {}
         subj = doc.get("subject") or {}
-        out.append({"code": name, "step": subj.get("step_id"), "attempt_id": subj.get("attempt_id"), "file": file_name, "reason": reason})
+        f = {"code": name, "step": subj.get("step_id"), "attempt_id": subj.get("attempt_id"), "file": file_name, "reason": reason}
+        if name == "effect-without-authorization":
+            # spec §7.6: reason missing | denied — a deny record followed by the certificate, or no accepted allow
+            f["reason_class"] = "denied" if " is deny" in reason else "missing"
+        out.append(f)
     return out, list(vr.unchecked), vr
 
 

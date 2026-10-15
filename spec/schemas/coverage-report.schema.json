@@ -122,7 +122,8 @@
               "step": { "type": ["string", "null"] },
               "attempt_id": { "type": ["integer", "null"] },
               "file": { "type": "string" },
-              "reason": { "type": "string" }
+              "reason": { "type": "string" },
+              "reason_class": { "enum": ["missing", "denied"], "description": "[H1] for effect-without-authorization (spec §7.6): a deny record followed by the certificate, or no accepted authorization before it." }
             }
           }
         },

@@ -102,7 +102,7 @@ def test_span_attempts_collapse_and_b17_is_unchecked(degrading_flow):
     run = r["runs"][0]
     assert run["reading"] == "convergent" and run["realized"] == PRIMARY[:5] + ["s6×2"] and run["via"] == ["primary"] * 6
     assert r["attempts"] == {"s6": {"runs_with_retries": 1, "max_attempts_seen": 2, "over_bound": 0, "unreconciled": 0}}
-    assert r["summary"]["unchecked"] == ["retry-without-reconciliation (B17): unchecked for 1 span-sourced run(s) (no certificates to read it from)"]
+    assert "retry-without-reconciliation (B17): unchecked for 1 span-sourced run(s) (no certificates to read it from)" in r["summary"]["unchecked"]
     # four attempts from spans: on_exceed {outcome: error} read as taken, outcome unknown
     r = evaluate(degrading_flow, index_runs(spans("t1", PRIMARY + ["s6"] * 3)), None)
     run = r["runs"][0]
@@ -116,7 +116,7 @@ def test_span_attempts_collapse_and_b17_is_unchecked(degrading_flow):
     # a repeated non-effect step is still a divergent repeat
     r = evaluate(degrading_flow, index_runs(spans("t1", ["s1", "s2", "s2", "s3", "s4", "s5", "s6"])), None)
     assert r["runs"][0]["reading"] == "divergent" and r["runs"][0]["divergent"][0].startswith("repeat: s2")
-    assert r["summary"]["unchecked"] == []
+    assert not [u for u in r["summary"]["unchecked"] if u.startswith("retry-without-reconciliation")]
 
 
 def test_attempts_block_absent_without_effect_steps(canon_flow):

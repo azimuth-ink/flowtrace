@@ -86,7 +86,26 @@ READING_FINDING_CODES = (
     ("degradation:", "undeclared-edge"),                              # [D11]
     ("attempts-exceeded:", "attempts-over-bound"),                    # [H4] more attempts than attempts.max and no on_exceed absorbed it
     ("retry-without-reconciliation:", "retry-without-reconciliation"),  # [H4] binding B17, from agent-dec's step 1d
+    ("effect-without-authorization:", "effect-without-authorization"),  # [H1] binding B10, from agent-dec's step 1d
 )
+# Step-1d findings passed through from agent-dec's verifier as warn-class
+# findings on the flow (never re-derived): [H1] the authorization's validity
+# window and freshness (B16).
+PASS_THROUGH_CODES = ("authorization-expired", "authorization-stale")
+
+
+def _pass_through_findings(conformance: dict) -> list[dict]:
+    """One warn finding per pass-through code, counting the runs the
+    verifier reported it for."""
+    out = []
+    for code in PASS_THROUGH_CODES:
+        hits = [(r["trace_id"], f) for r in conformance["runs"] for f in r.get("findings") or [] if f["code"] == code]
+        if hits:
+            runs = sorted({t for t, _ in hits})
+            first = hits[0][1]
+            out.append(_finding(code, "warn", f"{len(runs)} run(s), from agent-dec's step 1d: {first['reason']}"
+                                + (f" (first of {len(hits)})" if len(hits) > 1 else ""), first.get("step")))
+    return out
 
 
 def _reading_findings(conformance: dict, severity: str) -> list[dict]:
@@ -268,6 +287,7 @@ def evaluate_flow(flow: Flow, adapter, window: Window, cfg: dict, *, alerts, bin
         findings.append(_finding("non-convergent-runs", "fail" if pol.require_convergent else "warn",
                                  f"{conformance['summary']['non_convergent_runs']} run(s) read divergent or failed against the authorized plan"))
     findings += _reading_findings(conformance, "fail" if pol.require_convergent else "warn")
+    findings += _pass_through_findings(conformance)
 
     # --- verdict --------------------------------------------------------------
     below = score + EPS < pol.coverage_threshold
