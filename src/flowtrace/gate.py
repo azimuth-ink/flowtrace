@@ -44,6 +44,7 @@ class GateInputs:
     trust_bundle: str | None = None
     dec_dirs: Sequence[str] = field(default_factory=list)
     methods: str | None = None                   # method artifacts for agent-dec's ND0 replay (default: methods/ in or beside a --dec-dir)
+    approvals: str | None = None                 # [H2] human_approval attestations <sha256 hex>.json (default: approvals/ beside each run's chain)
     queries: Sequence[str] = field(default_factory=list)
     baseline: str | None = None
     execution_evidence: bool | None = None       # None = per config
@@ -91,7 +92,8 @@ READING_FINDING_CODES = (
 # Step-1d findings passed through from agent-dec's verifier as warn-class
 # findings on the flow (never re-derived): [H1] the authorization's validity
 # window and freshness (B16).
-PASS_THROUGH_CODES = ("authorization-expired", "authorization-stale")
+PASS_THROUGH_CODES = ("authorization-expired", "authorization-stale",
+                      "sod-violation", "approval-payload-mismatch")       # [H2] bindings B11, B15 on the cited human_approval
 
 
 def _pass_through_findings(conformance: dict) -> list[dict]:
@@ -331,7 +333,7 @@ def run_gate(inp: GateInputs) -> tuple[dict, int]:
         raise GateUsageError("execution evidence is enabled: pass --trust-bundle and --dec-dir (or disable scoring.execution_evidence)")
     if not inp.telemetry:
         raise GateUsageError("at least one --telemetry file")
-    for p in (list(inp.telemetry) + list(inp.assurance_telemetry) + [inp.alerts, inp.trust_bundle, inp.baseline, inp.methods]
+    for p in (list(inp.telemetry) + list(inp.assurance_telemetry) + [inp.alerts, inp.trust_bundle, inp.baseline, inp.methods, inp.approvals]
               + list(inp.queries) + list(inp.dec_dirs)):
         if p and not pathlib.Path(p).exists():
             raise GateUsageError(f"not found: {p}")
@@ -362,7 +364,7 @@ def run_gate(inp: GateInputs) -> tuple[dict, int]:
                           [_rel(t, inp.reproducible) for t in inp.telemetry], [_rel(t, inp.reproducible) for t in inp.telemetry])
     alerts = load_alerts(inp.alerts) if inp.alerts else None
     bindings = load_query_bindings(inp.queries) if inp.queries else []
-    index = (CertificateIndex(inp.dec_dirs, inp.trust_bundle, flows_dir=inp.flows, methods=inp.methods)
+    index = (CertificateIndex(inp.dec_dirs, inp.trust_bundle, flows_dir=inp.flows, methods=inp.methods, approvals=inp.approvals)
              if (inp.dec_dirs or inp.trust_bundle) else None)
     baseline = json.loads(pathlib.Path(inp.baseline).read_text(encoding="utf-8")) if inp.baseline else None
     base_flows = {f["id"]: f for f in (baseline or {}).get("flows", [])}
@@ -388,6 +390,7 @@ def run_gate(inp: GateInputs) -> tuple[dict, int]:
             "trust_bundle": _rel(inp.trust_bundle, inp.reproducible),
             "dec_dirs": [_rel(d, inp.reproducible) for d in inp.dec_dirs],
             "methods": _rel(str(index.methods), inp.reproducible) if (index is not None and index.methods) else None,
+            "approvals": _rel(inp.approvals, inp.reproducible),
             "baseline": _rel(inp.baseline, inp.reproducible),
             "adapter": adapter.name,
             "dialects": sorted(adapter.dialects),

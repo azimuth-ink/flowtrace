@@ -1,7 +1,7 @@
 """`flowtrace` command line.
 
   flowtrace gate --flows DIR --telemetry FILE [--assurance-telemetry FILE] [--config flowtrace.yaml] [--alerts alerts.yaml]
-                 [--queries q.yaml] [--trust-bundle B] [--dec-dir D] [--methods M] [--baseline report.json]
+                 [--queries q.yaml] [--trust-bundle B] [--dec-dir D] [--methods M] [--approvals A] [--baseline report.json]
                  [--execution-evidence] [--sampling-rate X] [--assurance-sampling-rate Y] [--out coverage-report.json] [--reproducible]
   flowtrace decompose --flows DIR [--config C] [--history h.yaml] [--sample-runs N]
   flowtrace tier (--score S | --dimension name=value ...) [--config C]
@@ -26,7 +26,8 @@ def _add_common(ap: argparse.ArgumentParser) -> None:
 def cmd_gate(args) -> int:
     from .gate import GateInputs, GateUsageError, format_summary, run_gate
     inp = GateInputs(flows=args.flows, telemetry=args.telemetry, config=args.config, alerts=args.alerts,
-                     trust_bundle=args.trust_bundle, dec_dirs=args.dec_dir or [], methods=args.methods, queries=args.queries or [],
+                     trust_bundle=args.trust_bundle, dec_dirs=args.dec_dir or [], methods=args.methods, approvals=args.approvals,
+                     queries=args.queries or [],
                      baseline=args.baseline, execution_evidence=(True if args.execution_evidence else None),
                      sampling_rate=args.sampling_rate, assurance_telemetry=args.assurance_telemetry or [],
                      assurance_sampling_rate=args.assurance_sampling_rate, reproducible=args.reproducible, registry=args.registry,
@@ -146,6 +147,8 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--dec-dir", action="append", help="directory of DEC certificates (*.dec.json), searched recursively; repeatable")
     g.add_argument("--methods", help="method artifacts for agent-dec's ND0 replay when its verifier is called on a run directory "
                                      "(default: methods/ in or beside a --dec-dir)")
+    g.add_argument("--approvals", help="directory of human_approval attestations named <sha256 hex>.json, joined to dec.approval_digest "
+                                       "and passed to agent-dec's verifier (default: approvals/ beside each run's chain)")
     g.add_argument("--baseline", help="a previous coverage-report.json to print deltas against")
     g.add_argument("--execution-evidence", action="store_true", help="enable the execution-evidence component (also scoring.execution_evidence.enabled)")
     g.add_argument("--sampling-rate", type=float, help="effective trace sampling rate of the export (default: config telemetry.assumed_sampling_rate)")

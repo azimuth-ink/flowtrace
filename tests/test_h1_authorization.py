@@ -17,7 +17,7 @@ from test_h4_attempts import PRIMARY, spans
 
 def test_the_findings_this_unit_reads():
     assert "effect-without-authorization" in READ_FINDINGS and "effect-without-authorization" in DIVERGENT_FINDINGS
-    assert set(PASS_THROUGH_CODES) == {"authorization-expired", "authorization-stale"}
+    assert {"authorization-expired", "authorization-stale"} <= set(PASS_THROUGH_CODES)
     assert {"authorization-expired", "authorization-stale"} <= set(READ_FINDINGS)
     assert not {"authorization-expired", "authorization-stale"} & set(DIVERGENT_FINDINGS)
 

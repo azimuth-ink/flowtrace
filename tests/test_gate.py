@@ -17,7 +17,7 @@ def normalize(report: dict) -> dict:
     r = json.loads(json.dumps(report))
     r["generated_at"] = None
     r["inputs"]["flows_commit"] = None
-    for k in ("flows_dir", "config", "alerts", "trust_bundle", "baseline", "methods"):
+    for k in ("flows_dir", "config", "alerts", "trust_bundle", "baseline", "methods", "approvals"):
         if r["inputs"].get(k):
             r["inputs"][k] = pathlib.Path(r["inputs"][k]).name
     for k in ("telemetry", "queries", "dec_dirs", "assurance_telemetry"):

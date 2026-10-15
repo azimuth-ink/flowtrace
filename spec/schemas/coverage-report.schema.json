@@ -34,6 +34,7 @@
         "trust_bundle": { "type": ["string", "null"] },
         "dec_dirs": { "type": "array", "items": { "type": "string" } },
         "methods": { "type": ["string", "null"], "description": "[H4] the method artifacts directory passed to agent-dec's verifier (ND0 replay) when it is called on a run directory." },
+        "approvals": { "type": ["string", "null"], "description": "[H2] --approvals: the directory of human_approval attestations joined to dec.approval_digest and passed to the verifier; null = the approvals/ directory beside each run's chain." },
         "baseline": { "type": ["string", "null"] },
         "adapter": { "type": "string" },
         "dialects": { "type": "array", "items": { "type": "string" } }
@@ -358,7 +359,11 @@
                       "approval_present": {
                         "type": "object",
                         "required": ["spans_with_digest", "resolved"],
-                        "properties": { "spans_with_digest": { "type": "integer" }, "resolved": { "type": "integer" } }
+                        "properties": {
+                          "spans_with_digest": { "type": "integer" },
+                          "resolved": { "type": "integer", "description": "[H2] spans whose dec.approval_digest resolves to a human_approval attestation that verifies in approvers[] and binds to the span" },
+                          "statuses": { "type": "object", "additionalProperties": { "type": "integer" } }
+                        }
                       }
                     }
                   }

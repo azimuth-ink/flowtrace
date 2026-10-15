@@ -490,7 +490,8 @@ def evaluate(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None
 # binding B17 (spec §7.5); [H1] binding B10 and the authorization window /
 # freshness findings (spec §7.6; the latter two are §6.6 statuses passed
 # through, never re-derived). Later units extend the tuples.
-READ_FINDINGS = ("retry-without-reconciliation", "effect-without-authorization", "authorization-expired", "authorization-stale")
+READ_FINDINGS = ("retry-without-reconciliation", "effect-without-authorization", "authorization-expired", "authorization-stale",
+                 "sod-violation", "approval-payload-mismatch")                       # [H2] bindings B11, B15 (the approval's checks)
 DIVERGENT_FINDINGS = ("retry-without-reconciliation", "effect-without-authorization")
 UNCHECKED_FROM_SPANS = (("retry-without-reconciliation (B17)", "retries"), ("effect-without-authorization (B10)", "effect"))
 

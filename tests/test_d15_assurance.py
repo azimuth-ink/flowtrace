@@ -302,7 +302,7 @@ def test_authorization_coverage_statuses(degrading_flow, w3):
     assert r["steps"]["s4"]["statuses"] == {"verified": 1} and r["authorization"]["s6"]["statuses"] == {"verified": 1}
     assert r["certificate_coverage"] == 1.0 and r["authorization_coverage"] == 1.0 and r["score"] == 1.0 and r["completion_coverage"] is None
     assert r["authorization"]["s6"]["completion_status"] == {"completed": 1}
-    assert r["authorization"]["s6"]["approval_present"] == {"spans_with_digest": 0, "resolved": 0}
+    assert r["authorization"]["s6"]["approval_present"]["spans_with_digest"] == 0 and r["authorization"]["s6"]["approval_present"]["resolved"] == 0
     # a deny record verifies and counts as not covered
     runs = effect_window(degrading_flow, d, d["run"], authz=d["deny"], s4=d["s4"])
     r = evaluate_execution_evidence(degrading_flow, runs, index)

@@ -449,7 +449,8 @@ class CertificateIndex:
     `verifier_result()` (flowtrace.evidence)."""
 
     def __init__(self, dirs: Sequence[str | pathlib.Path], trust_bundle: str | pathlib.Path | None, *,
-                 flows_dir: str | pathlib.Path | None = None, methods: str | pathlib.Path | None = None):
+                 flows_dir: str | pathlib.Path | None = None, methods: str | pathlib.Path | None = None,
+                 approvals: str | pathlib.Path | None = None):
         try:
             from agent_dec import verify_dec as vd  # type: ignore
         except ImportError:
@@ -489,6 +490,22 @@ class CertificateIndex:
                     self.completions[digest] = (p, c)
                 elif kind is None:                       # a step certificate (an ND2/ND3 one is the step's attestation)
                     self.steps[digest] = (p, c)
+        # [H2] human_approval attestations: `approvals/<sha256 hex>.json` beside a run's chain (agent-dec's layout;
+        # the approval is not a chain member) and every *.json under --approvals, indexed by their digest —
+        # the value of dec.approval_digest and of the record's decision.approval_ref
+        self.approvals_dir = pathlib.Path(approvals) if approvals else None
+        files = [p for root in self.dirs for p in sorted(root.rglob("approvals/*.json"))]
+        if self.approvals_dir is not None:
+            files += sorted(self.approvals_dir.glob("*.json"))
+        for p in files:
+            try:
+                a = json.loads(p.read_text(encoding="utf-8"))
+                digest = vd.cert_digest(a)
+            except (ValueError, TypeError) as e:
+                self.errors.append(f"{p}: unreadable ({str(e)[:60]})")
+                continue
+            if isinstance(a, dict) and a.get("kind") == "attestation" and a.get("type") == "human_approval":
+                self.approvals[digest] = (p, a)
         self.trust_bundle_path = pathlib.Path(trust_bundle) if trust_bundle else None
         self.bundle = vd.load_trust_bundle(self.trust_bundle_path) if trust_bundle else None
         self.resolve = vd.build_resolver(None, self.bundle) if self.bundle else None
@@ -518,7 +535,7 @@ class CertificateIndex:
         key = run_dir.resolve()
         if key not in self._verifier_cache:
             argv = verifier_argv(key, trust_bundle=self.trust_bundle_path, flows_dir=self.flows_dir, methods=self.methods,
-                                 approvals=None, runs_dirs=[])
+                                 approvals=self.approvals_dir, runs_dirs=[])
             self._verifier_cache[key] = run_verifier(key, argv)
         return self._verifier_cache[key]
 
@@ -650,6 +667,29 @@ class CertificateIndex:
                 return p.name
         return None
 
+    def approval_for(self, digest: str, span: SpanRow) -> tuple[str, str | None]:
+        """[H2] -> (status, reason) for dec.approval_digest: `resolved` when
+        the attestation is found, its signature verifies in approvers[] and
+        its subject (when it names a flow / run) binds to the span; else
+        artifact-not-found | signature-invalid | flow-mismatch |
+        run-binding-mismatch | unverifiable. The B11 / B15 checks on the
+        approval are the verifier's (sod-violation,
+        approval-payload-mismatch), read through the authorization status."""
+        hit = self.approvals.get(digest)
+        if hit is None:
+            return "artifact-not-found", f"no human_approval attestation with digest {digest[:19]}… under --dec-dir / --approvals"
+        path, doc = hit
+        bad = self._signed(path, doc, "approvers")
+        if bad:
+            return bad
+        subj = doc.get("subject") or {}
+        fl = subj.get("flow") or {}
+        if fl and (fl.get("id"), fl.get("version"), fl.get("step")) != (span.attributes.get("flow.id"), span.attributes.get("flow.version"), span.attributes.get("flow.step")):
+            return "flow-mismatch", f"{path.name}: subject.flow does not bind to the span"
+        if subj.get("run_id") and subj["run_id"] != span.trace_id and span.attributes.get("flow.run_id") != subj["run_id"]:
+            return "run-binding-mismatch", f"{path.name}: subject.run_id {subj['run_id']} != span trace {span.trace_id} (B3/B4)"
+        return "resolved", None
+
     def completion_status(self, digest: str, span: SpanRow) -> tuple[str, str | None]:
         """-> (status, reason) for dec.completion_cert_digest: the completion's
         `status` (completed | failed | unknown | reconciled) when the artifact
@@ -767,6 +807,7 @@ def _completion_and_approval(sid: str, runs: Mapping[str, Run], index: Certifica
     """Per effect step (spec §6.6): the completion evidence statuses and the
     approval digests the spans carry, resolved and reported, not scored."""
     statuses: dict[str, int] = {}
+    approval_statuses: dict[str, int] = {}
     present = resolved = 0
     binding_mismatches = 0
     for run in runs.values():
@@ -790,10 +831,13 @@ def _completion_and_approval(sid: str, runs: Mapping[str, Run], index: Certifica
         approval = span.attributes.get("dec.approval_digest")
         if approval:
             present += 1
-            if index is not None and approval in index.approvals:
-                resolved += 1
+            if index is not None:
+                a_status, a_reason = index.approval_for(approval, span)
+                if a_status == "resolved" or (a_status == "run-binding-mismatch" and run_binding != "strict"):
+                    resolved += 1
+                approval_statuses[a_status] = approval_statuses.get(a_status, 0) + 1
     return {"completion_status": dict(sorted(statuses.items())), "completion_run_binding_mismatches": binding_mismatches,
-            "approval_present": {"spans_with_digest": present, "resolved": resolved}}
+            "approval_present": {"spans_with_digest": present, "resolved": resolved, "statuses": dict(sorted(approval_statuses.items()))}}
 
 
 def evaluate_execution_evidence(flow: Flow, runs: Mapping[str, Run], index: CertificateIndex | None,

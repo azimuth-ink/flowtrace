@@ -1680,6 +1680,7 @@
   "inputs": {
     "adapter": "otlp_duckdb",
     "alerts": "alerts.yaml",
+    "approvals": null,
     "assurance_telemetry": [],
     "assurance_telemetry_sha256": [],
     "baseline": null,
