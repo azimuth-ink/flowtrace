@@ -40,6 +40,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
+from .config import REPLAYABLE_ND_CLASSES
 from .coverage import CertificateIndex, Run, observed_steps
 from .flows import DEFAULT_OUTCOMES, Flow, degradation_edges, degradation_target
 
@@ -276,9 +277,21 @@ def _reading(doc: Mapping[str, Any], realized: Sequence, *, outcome: str | None 
 
 
 def _gate_authority_reason(step: Mapping[str, Any], outcome: str) -> str | None:
-    """Gate authority (binding B12) is the companion validator's R14 on
-    declarations; the reading carries no rule of its own in this unit."""
-    return None
+    """Gate authority (D14; binding B12): the rule itself is the companion
+    validator's R14 on declarations, which this engine relies on and does not
+    enforce (spec §6.7). The reading only carries, as a divergence reason, that
+    a `block` outcome was reached by an edge from a step whose declared class
+    is not ND0/ND1 — agent-dec's verifier's note, so the conformance view
+    says what the certificate layer recorded. Never on the 2.1.0 example,
+    whose one block-gate (s4) is ND0."""
+    if outcome != "block":
+        return None
+    dclass = step.get("nd_class")
+    if dclass in REPLAYABLE_ND_CLASSES:
+        return None
+    return (f"gate-authority: block reached from {step.get('id')}, whose declared class is "
+            f"{dclass or 'undeclared'} (binding B12: only an ND0/ND1 step may be the source of an edge "
+            f"whose target is block)")
 
 
 def _attempt_rules(entries, kinds, by_id, outcome, degraded, divergent, exits) -> None:
