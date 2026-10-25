@@ -14,7 +14,8 @@ degradation, attempts, authorization and cancellation). Each tag names the
 unit the paragraph belongs to, so that a unit can be removed with its
 paragraphs; untagged text is the 0.1.0 contract, unchanged. Where a tagged
 paragraph names a field, finding or option the 0.1.0 software does not yet
-have, the paragraph is the contract the next release implements.*
+have, the paragraph is the contract the next release implements. Erratum
+2026-10-25: 14 clarifications; see the changelog.*
 
 This document is normative for the engine: where the paper says *may* and
 *for example*, this document says what the shipped engine does, with the
@@ -29,8 +30,8 @@ them:
 
 | Artifact | Owner | Pin consumed by 0.1.0 |
 |---|---|---|
-| Flow descriptor (`flow.spec/v0.2`), rules R1–R11, the `quote-issue` canon | azimuth-ink/polydiagram | `9345577` (software 0.3.0) |
-| Step / run certificates (`dec_version` 0.2), trust bundles (`dec-trust/0.2`), the verifier | azimuth-ink/agent-dec | `e8075f9` (software 0.2.0) |
+| Flow descriptor (`flow.spec/v0.2`), rules R1–R11, the `quote-issue` canon | azimuth-ink/polydiagram | `polydiagram v0.3.0` |
+| Step / run certificates (`dec_version` 0.2), trust bundles (`dec-trust/0.2`), the verifier | azimuth-ink/agent-dec | `agent-dec v0.2.0` |
 | Terminology, attribute namespace, bindings B1–B7 | the shared canon, reproduced in FTC v1.1 "Terminology" and §4.7 | — |
 
 *2026-10-11:* the revision of the same date depends on the companion
@@ -41,9 +42,9 @@ rules R12–R15, and, in agent-dec, the artifact kinds `authorization` and
 `completion`, the `human_approval` attestation, the manifest fields
 `outcome`, `termination`, `children[]` and `steps[].via`, verifier steps 1c
 and 1d, and the trust-bundle classes `approvers[]` and
-`policy_authorities[]`; the pins above are updated after those commits land
-(pinned order: polydiagram → agent-dec → flowtrace). Bindings B14 and B17
-are read by this engine as FTC §4.8 states.
+`policy_authorities[]`; the pinned commits are recorded in the repository's
+pin file (pinned order: polydiagram → agent-dec → flowtrace). Bindings B14
+and B17 are read by this engine as FTC §4.8 states.
 
 Terms (*flow, step, segment, run, trigger, criticality, SLO, required
 telemetry, debug scenario, answerability, coverage, conformance, authorized
@@ -67,7 +68,7 @@ evidence, task grant, assurance stream*).
 | Certificates + trust bundle | `*.dec.json` under one or more directories; `dec-trust/0.x` | when execution evidence is enabled | binding B7 (§6.5) and the manifest input to conformance (B6, §7) |
 | Baseline | a previous `coverage-report.json` | no | deltas for review comments (§9) |
 | **[D15]** Assurance-stream telemetry | adapter-specific; 0.1.0 adapters: a second OTLP/JSON export (`--assurance-telemetry`) | no | the assurance stream when it is exported separately from the sampled stream (§4.1); when absent, the one `--telemetry` export is both streams |
-| **[D15] [H1] [H4]** Evidence artifacts | `kind: authorization` and `kind: completion` artifacts and `human_approval` attestations, `*.dec.json` under the same `--dec-dir` directories | when execution evidence is enabled and the flow declares effect steps | authorization coverage (§6.6) and the effect-step conformance readings (§7.5, §7.6) |
+| **[D15] [H1] [H4]** Evidence artifacts | `kind: authorization` and `kind: completion` artifacts, `*.dec.json` under the same `--dec-dir` directories; `human_approval` attestations as `approvals/<hex>.json` beside a run's chain or under `--approvals` | when execution evidence is enabled and the flow declares effect steps | authorization coverage (§6.6) and the effect-step conformance readings (§7.5, §7.6) |
 | **[H3]** Other runs' certificates | `--runs-dir <dir>` (one or more), run certificates of runs outside the window, found by `subject.run_id` | no | cancellation propagation across parent and child runs (§7.7); without it the rule is reported unchecked |
 
 A **window** is the half-open interval `[start_ns, end_ns)` the adapter
@@ -242,15 +243,17 @@ Consequences:
 - Every check of §4 except the `content` items reads the **assurance
   stream** (the `--assurance-telemetry` export when given, else the
   `--telemetry` export); a required attribute of class `content`, and every
-  verification query of a scenario whose `required_data` names such an
-  attribute (§5), reads the **sampled stream** (`--telemetry`). The report
+  verification query of a scenario whose binding declares `stream: sampled`
+  or, lacking one, whose `required_data` names such an attribute (§5), reads
+  the **sampled stream** (`--telemetry`). The report
   records per attribute its class, whether it was assumed, and the stream it
   was read from; the per-run completeness of a `content` attribute is
   computed over the sampled runs and joined to the assurance stream's runs by
   trace id, with a run absent from the sampled stream counted as *not
   evaluated* for that attribute rather than as missing.
 - A `content`-class attribute found on a boundary span of the assurance
-  stream export (when the two exports are distinct) is the warn-class
+  stream export (only when the two exports are distinct; vacuous with one)
+  is the warn-class
   finding `content-on-assurance-stream`, naming the attribute and the step:
   the pipeline carried content where the flow declared it would not. The
   engine does not inspect values; it matches declared names.
@@ -370,6 +373,7 @@ alerts:
     threshold: <number>   # same unit as the SLO key
     evaluation_window_s: <seconds>
     notification_latency_s: <seconds>
+    bound: max | min      # §6.7 only; default max
 ```
 
 **covers** a target when `flow`, `scope`/`step` and `slo` match. A target is
@@ -426,8 +430,9 @@ replayable.
 FTC §4.5).** When the flow declares steps with `effect: true`, the
 execution-evidence component gains a second population: the effect steps.
 For each effect step and each sampled run, the boundary span's
-`dec.authz_cert_digest` **verifies** iff: an artifact with that digest and
-`kind: authorization` is found under `--dec-dir`; agent-dec's verifier,
+`dec.authz_cert_digest` (with attempts, §7.5: the first attempt's span; the
+completion digest, the last's) **verifies** iff: an artifact with that digest
+and `kind: authorization` is found under `--dec-dir`; agent-dec's verifier,
 called as a library, accepts it — signature against a `policy_authorities[]`
 key of the `dec-trust/0.2` bundle, its step-1d checks (issued before the
 step's certificate in chain order, within the decision's validity window and
@@ -438,9 +443,11 @@ attestation's checks) with no finding; its subject binds to the span's
 step: `verified, missing-span, missing-digest, artifact-not-found,
 signature-invalid, flow-mismatch, run-binding-mismatch, authority-not-trusted,
 denied, authorization-expired, authorization-stale, approval-invalid,
-unverifiable`. `denied` (a verifying record with `decision: deny`, including
-`reason: policy-unavailable`) counts as not covered and raises the
-conformance finding of §7.6. The pooled score is
+unverifiable`. A verifying `allow` record the verifier does not accept for
+the step (differing `intended_inputs`; superseded by a later record) is
+`unverifiable`, with its reason. `denied` (a verifying record with
+`decision: deny`, including `reason: policy-unavailable`) counts as not
+covered and raises the conformance finding of §7.6. The pooled score is
 `(verified certificate instances + verified authorization instances) /
 (runs × (|ND0/ND1 steps| + |effect steps|))`, a step in both populations
 counting in both; the report carries the two populations' scores separately
@@ -461,10 +468,12 @@ reports two indicators over the window's runs, each with its band:
 - `veto_rate` = runs whose outcome is `block` / runs.
 
 The source per run is the run certificate's manifest when the run carries one
-(§7.2: `steps[].via == on_fail` for the degradation rate; `manifest.outcome ==
-block` for the veto rate; `source: manifest`); otherwise the boundary-span
-sequence of the assurance stream (`source: spans`, reported as
-`approximate: true`): a transition from step X to step Y counts as degraded
+(§7.2: `steps[].via == on_fail`, or `manifest.outcome` naming the last
+entry's declared `on_fail.outcome`, for the degradation rate;
+`manifest.outcome == block` for the veto rate; `source: manifest`); otherwise
+the boundary-span sequence of the assurance stream (`source: spans`, reported
+as `approximate: true`; `mixed` when the runs' sources differ, `none` without
+runs): a transition from step X to step Y counts as degraded
 iff Y is X's `on_fail.to` and Y is not in X's `next`; a run whose last
 boundary span is a step with `on_fail.outcome` and that has no successor span
 counts as degraded, and as vetoed iff that outcome is `block`. Where
@@ -479,8 +488,9 @@ band is the finding `sli-out-of-band` (`{indicator, rate, band, direction:
 above | below}`), warn class by default and fail class when the band
 declares `gate: true`. The indicators are reported beside the score and do
 not enter it; an alert in `alerts.yaml` with `slo: degradation_rate` or
-`slo: veto_rate` makes the band's bounds detectability targets under §6.3
-(`threshold` compared as ≤ `max` and ≥ `min`).
+`slo: veto_rate` and `bound: max | min` (default `max`) makes that declared
+bound (`max < 1.0`, `min > 0.0`) a §6.3 target: adequate iff `threshold ≤
+max` (`≥ min`), and fired when the bound was breached.
 
 **[D14]** Because the companion validator's R14 (binding B12) admits only
 ND0/ND1 steps as sources of an `on_fail` edge to `block`, the veto rate of a
@@ -539,13 +549,16 @@ or none). A manifest `termination` of `cancelled` or `expired` reads
 neither absent nor divergent: the run was stopped), subject to 7.6 for a
 parent with children; `failed` reads as 7.2's failed run; a run whose
 manifest has no `termination` is read as before 2026-10-11. A `loop` step's
-`bound.on_exceed` in the `{to | outcome}` form is read as a degradation path
-taken at iteration `max + 1`, with `fail` ≡ `outcome: error` and `flag` ≡
-the 0.1.0 divergent reading. From spans alone, an `on_fail.outcome` edge
-is read as the run ending at the source step (its declared successors are
-not absent); the engine cannot see the outcome and records `outcome:
-unknown`. The engine's reading and agent-dec's `conformance_reading` must
-agree on these rules as on 7.2's; the test suite asserts it.
+`bound.on_exceed` (and, per 7.5, an effect step's `attempts.on_exceed`) in
+the `{to | outcome}` form is a declared degradation edge, read as a
+degradation path taken at iteration `max + 1`, with `fail` ≡ `outcome:
+error` and `flag` ≡ the 0.1.0 divergent reading. From spans alone, an
+`on_fail.outcome` edge is read as the run ending at the source step (its
+declared successors are not absent; a window-truncated run reads the same,
+hence §6.7's `approximate`); the engine cannot see the outcome and
+records `outcome: unknown`. The engine's reading and agent-dec's
+`conformance_reading` must agree on these rules as on 7.2's; the test suite
+asserts it.
 
 7.5 **[H4] Attempts of an effect step and reconciliation before retry
 (binding B17 as read here; FTC §4.8).** For a step declared `effect: true`,
@@ -555,8 +568,8 @@ spans, repeated boundary spans of the step — are **attempts** and collapse
 into the one declared step for every reading of 7.2 and 7.4: the step is
 present once, its order is that of its first attempt, and the repeat is not
 a divergent repetition. More attempts than `attempts.max` is read as the
-step's `on_exceed` taken (7.4) at attempt `max + 1`, or, when the
-`attempts` block declares no `on_exceed`, as the divergent finding
+step's `on_exceed` taken (7.4) at attempt `max + 1`, or, when `on_exceed`
+is absent or its outcome or step was not taken, as the divergent finding
 `attempts-over-bound` (`{step, attempts_seen, max}`); a flow that declares
 `effect: true` without `attempts` has no bound and the collapse still
 applies. With certificates, the engine reads agent-dec's step-1d result for
@@ -575,7 +588,8 @@ is not preceded in the chain by a `kind: authorization` artifact for the
 same `idempotency_key_commitment` and `attempt_id`, or whose authorization
 evidence has `decision: deny`, is the divergent finding
 `effect-without-authorization` (`{step, attempt_id, reason: missing |
-denied}`), taken from agent-dec's step-1d result. From spans alone a
+denied}`, `missing` covering every non-deny cause, §6.6's included), taken
+from agent-dec's step-1d result. From spans alone a
 boundary span without `dec.authz_cert_digest` is the §6.6 status
 `missing-digest` and the finding is reported `unchecked`. The engine records
 the finding; it has no path by which to prevent the step, and this
@@ -593,7 +607,8 @@ companion run manifest's optional instant at which the run's `termination`
 state was reached; the flow's `cancel_propagation_s`, or
 `conformance.cancel_propagation_s` from §10 when the flow declares none). Otherwise the divergent finding
 `cancellation-not-propagated` (`{parent_run_id, child_run_id, reason:
-not-terminated | late | certificate-not-found}`) is attributed to the parent
+not-terminated | late | certificate-not-found}`, the last also when the
+child's certificate does not verify) is attributed to the parent
 run; `certificate-not-found` is reported `unchecked` rather than divergent
 when no `--runs-dir` was given. A child with `termination: expired` or
 `failed` is `not-terminated` for this rule (B14 names `cancelled` and
@@ -671,7 +686,9 @@ no step or outcome that absorbs it); **[H1]** `effect-without-authorization`;
 `attribute-class-assumed`, `content-on-assurance-stream`. A reading reported
 `unchecked` (§7.5–§7.7 without the evidence they need) is neither a finding
 nor a pass; it is listed under `conformance.summary.unchecked` so that a
-green gate cannot be mistaken for a checked rule. Load errors (exit 2) gain:
+green gate cannot be mistaken for a checked rule; that list also carries the
+verifier's own non-zero `UNCHECKED` parts, its children part excepted (§7.7
+supersedes it). Load errors (exit 2) gain:
 **[H3]** a `--runs-dir` that does not exist; **[D15]** an
 `--assurance-telemetry` export whose window does not overlap `--telemetry`'s.
 
