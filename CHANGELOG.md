@@ -13,6 +13,11 @@ that change them — see the README's "Versioning" section.
 
 ## [0.1.0] — 2026-10-10
 
+### 2026-10-25 — erratum (within 0.1.0)
+
+- Paper and spec: eighteen sentence-level clarifications from the Wave 3 implementation notes (degradation indicator source and the shared-target note on the running example; attempts and over-bound readings from spans; status set for authorization records; `mixed`/`none` SLI sources; approvals location; child certificate verification). The spec's pin table now names the tagged companion versions; the pinned commits live in the pin locations below.
+- Pins: polydiagram and agent-dec advanced to their erratum commits (S1: `on_exceed {to}` targets are degradation edges in polydiagram's validator too, matching this engine's reading). No engine change.
+
 First release: the coverage engine the FTC paper discloses, implementing
 FTC v1.1 §4.2–§4.8 on top of `flow.spec/v0.2` (polydiagram 0.3.0,
 `azimuth-ink/polydiagram@9345577`) and DEC v0.2 (agent-dec 0.2.0,
@@ -26,8 +31,8 @@ The engine rules the paper and `spec/coverage-engine.md` added on 2026-10-11
 new report key, config key and CLI flag is optional; a report produced before
 this block still validates against `flowtrace.report/v0.1`, and `flowtrace
 gate` with the 0.1.0 inputs still runs. The companions are consumed at their
-revision of the same date: `azimuth-ink/polydiagram@ce3598f` (R12–R15, DG13)
-and `azimuth-ink/agent-dec@05874ca` (authorization and completion evidence,
+revision of the same date: `azimuth-ink/polydiagram@e768f1c` (R12–R15, DG13)
+and `azimuth-ink/agent-dec@89fdc36` (authorization and completion evidence,
 `human_approval`, verifier steps 1c/1d, `dec-trust/0.2` classes); the pins
 in `pyproject.toml`, `.github/workflows/gate.yml`, `Makefile`,
 `CITATION.cff` and `examples/dec/SOURCE` moved together.
@@ -41,7 +46,7 @@ in `pyproject.toml`, `.github/workflows/gate.yml`, `Makefile`,
 - **H1 — effect steps without authorization (spec §7.6).** `effect-without-authorization` from agent-dec's step 1d (`reason_class: missing | denied`) makes the run divergent and is a gated finding code; from spans alone B10 is unchecked. `authorization-expired` and `authorization-stale` (B16, against the flow's `max_decision_age_s` through the verifier's `--flow-registry`) are passed through as warn findings and are statuses of authorization coverage; never re-derived.
 - **H2 — human approval.** `dec.approval_digest` resolves to the `human_approval` attestation from `approvals/` beside each run's chain or `--approvals` (verifies in `approvers[]`, binds to the span; `approval_present.resolved`); `sod-violation` and `approval-payload-mismatch` passed through as warn findings and read as the status `approval-invalid`. New flag `--approvals`, input `approvals`.
 - **H3 — cancellation across runs (spec §7.7).** For a cancelled parent with `children[]`, every child's run certificate (by `subject.run_id` in `--dec-dir`, then `--runs-dir`; it must verify) must record `termination: cancelled | completed` with `issued_at` within `cancel_propagation_s` (the flow's, else `conformance.cancel_propagation_s`) of the parent's `terminated_at` (else its run certificate's `issued_at`); otherwise `cancellation-not-propagated` with `reason_class: not-terminated | late | certificate-not-found` (expired and failed children are not-terminated — the literal B14; a child not found without `--runs-dir` is unchecked). New flag `--runs-dir`; report `conformance.cross_run`, per-run `children[]`.
-- **Running example 2.1.0.** `examples/flows/quote-issue.flow.yaml` is canon §7.1 (sha256 `bcbf4315…`); `examples/dec/` is agent-dec `05874ca`'s signed set verbatim (`SOURCE`): the dec-trust/0.2 bundle, methods, the flow-bound run with its s6 evidence, the variants, the cancelled pair, the negatives, the hosted run. Seven seeded windows (32 runs each) from `tools/make_synthetic_telemetry.py`: `full`, `s5-silent`, `s4-missing-attr` (regenerated against 2.1.0 and the new digests; s6 spans carry the authorization and completion digests), `s5-degraded` (convergent), `s6-unknown-reconciled` (convergent), `s6-retry-unreconciled` (divergent, B17), `cancelled-child-late` (divergent, B14); `examples/expected/` holds the seven reports (byte-identical on regeneration); `flowtrace.yaml` carries the quote-issue bands and `alerts.yaml` watches their upper bounds; the query binding declares `stream: assurance`. CI and `make check` run all seven (three pass, four must fail).
+- **Running example 2.1.0.** `examples/flows/quote-issue.flow.yaml` is canon §7.1 (sha256 `bcbf4315…`); `examples/dec/` is agent-dec `89fdc36`'s signed set verbatim (`SOURCE`): the dec-trust/0.2 bundle, methods, the flow-bound run with its s6 evidence, the variants, the cancelled pair, the negatives, the hosted run. Seven seeded windows (32 runs each) from `tools/make_synthetic_telemetry.py`: `full`, `s5-silent`, `s4-missing-attr` (regenerated against 2.1.0 and the new digests; s6 spans carry the authorization and completion digests), `s5-degraded` (convergent), `s6-unknown-reconciled` (convergent), `s6-retry-unreconciled` (divergent, B17), `cancelled-child-late` (divergent, B14); `examples/expected/` holds the seven reports (byte-identical on regeneration); `flowtrace.yaml` carries the quote-issue bands and `alerts.yaml` watches their upper bounds; the query binding declares `stream: assurance`. CI and `make check` run all seven (three pass, four must fail).
 
 ### Decisions recorded (2026-10-15)
 - Bands live in `flowtrace.yaml` (`flow.spec/v0.2` carries no band field); a descriptor band, if a later schema carries one, would win (spec §6.7).

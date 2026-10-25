@@ -72,8 +72,8 @@ flowtrace defines no flow descriptor and no certificate. It consumes both:
 
 | Repository | What flowtrace takes from it | Pin (0.1.0) |
 |---|---|---|
-| [azimuth-ink/polydiagram](https://github.com/azimuth-ink/polydiagram) | `flow.spec/v0.2` (one schema, one owner), the validator R1–R15, the canonical `quote-issue` descriptor | `azimuth-ink/polydiagram@ce3598f` — revision 2026-10-11 (outcomes, `on_fail`, `effect` / `attempts`, attribute classes, `assurance_sampling_floor`; R12–R15, DG13), software 0.3.0 |
-| [azimuth-ink/agent-dec](https://github.com/azimuth-ink/agent-dec) | the DEC verifier (`verify_dec`, called as a library: signatures, the conformance reading, the step-1d readings), the signed flow-bound `quote-issue` run with its evidence artifacts, the variants and negatives, the `dec-trust/0.2` bundle | `azimuth-ink/agent-dec@05874ca` — revision 2026-10-11 (authorization / completion evidence, `human_approval`, steps 1c/1d, `policy_authorities[]` / `approvers[]`), software 0.2.0 |
+| [azimuth-ink/polydiagram](https://github.com/azimuth-ink/polydiagram) | `flow.spec/v0.2` (one schema, one owner), the validator R1–R15, the canonical `quote-issue` descriptor | `azimuth-ink/polydiagram@e768f1c` — revision 2026-10-11 (outcomes, `on_fail`, `effect` / `attempts`, attribute classes, `assurance_sampling_floor`; R12–R15, DG13), software 0.3.0 |
+| [azimuth-ink/agent-dec](https://github.com/azimuth-ink/agent-dec) | the DEC verifier (`verify_dec`, called as a library: signatures, the conformance reading, the step-1d readings), the signed flow-bound `quote-issue` run with its evidence artifacts, the variants and negatives, the `dec-trust/0.2` bundle | `azimuth-ink/agent-dec@89fdc36` — revision 2026-10-11 (authorization / completion evidence, `human_approval`, steps 1c/1d, `policy_authorities[]` / `approvers[]`), software 0.2.0 |
 
 `examples/flows/quote-issue.flow.yaml` (2.1.0, sha256 `bcbf4315…`) is
 byte-identical to the descriptor in the three companion papers, in
@@ -98,8 +98,8 @@ they are, install the companions from sibling checkouts (this is what the CI
 comment says to do, and what `make dev` does):
 
 ```bash
-git clone https://github.com/azimuth-ink/polydiagram ../polydiagram   # at ce3598f
-git clone https://github.com/azimuth-ink/agent-dec   ../agent-dec     # at 05874ca
+git clone https://github.com/azimuth-ink/polydiagram ../polydiagram   # at e768f1c
+git clone https://github.com/azimuth-ink/agent-dec   ../agent-dec     # at 89fdc36
 make dev            # pip install -r requirements-dev.txt; pip install ../polydiagram ../agent-dec (as wheels); pip install -e .
 make check          # pytest + polydiagram validation + agent-dec verification + the seven gate runs + expected reports
 ```
@@ -306,8 +306,8 @@ the formats it introduces — `flowtrace.report/v0.x`, `flowtrace.config/v0.x`,
 (`pyproject.toml`, `CITATION.cff`, `.zenodo.json`, git tags) follow semantic
 versioning and declare which paper and which companion versions they
 implement: 0.1.0 implements FTC v1.1 — with its revision of 2026-10-11 — on
-`flow.spec/v0.2` (polydiagram 0.3.0 at `azimuth-ink/polydiagram@ce3598f`) and
-DEC v0.2 (agent-dec 0.2.0 at `azimuth-ink/agent-dec@05874ca`). Deprecated
+`flow.spec/v0.2` (polydiagram 0.3.0 at `azimuth-ink/polydiagram@e768f1c`) and
+DEC v0.2 (agent-dec 0.2.0 at `azimuth-ink/agent-dec@89fdc36`). Deprecated
 attribute aliases are accepted on ingest with a warning through every
 `flow.spec/v0.x` version and never emitted. See `CHANGELOG.md`.
 

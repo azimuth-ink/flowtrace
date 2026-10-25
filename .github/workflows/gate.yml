@@ -4,9 +4,9 @@ name: gate
 # flow-bound run verifies against flowtrace's flows as the registry, and the
 # gate reproduces the expected reports with execution evidence enabled.
 #
-# PINS. polydiagram is consumed at azimuth-ink/polydiagram@ce3598f (the
+# PINS. polydiagram is consumed at azimuth-ink/polydiagram@e768f1c (the
 # revision of 2026-10-11 within flow.spec/v0.2 — R12–R15, DG13 — software
-# 0.3.0) and agent-dec at azimuth-ink/agent-dec@05874ca (the revision of
+# 0.3.0) and agent-dec at azimuth-ink/agent-dec@89fdc36 (the revision of
 # 2026-10-11 within DEC v0.2 — authorization / completion evidence,
 # human_approval, steps 1c/1d, dec-trust/0.2 classes — software 0.2.0).
 # Those refs exist only on unpushed branches today: until they are pushed,
@@ -22,8 +22,8 @@ on:
     - cron: "17 6 * * 1"   # weekly: the same job against the companions' latest main (drift surfaces here)
 
 env:
-  POLYDIAGRAM_REF: ce3598f
-  AGENT_DEC_REF: 05874ca
+  POLYDIAGRAM_REF: e768f1c
+  AGENT_DEC_REF: 89fdc36
 
 jobs:
   three-repo:

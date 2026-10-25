@@ -9,7 +9,7 @@ from conftest import REPO
 import flowtrace
 
 VERSION = "0.1.0"
-PINS = {"polydiagram": "ce3598f", "agent-dec": "05874ca"}
+PINS = {"polydiagram": "e768f1c", "agent-dec": "89fdc36"}
 
 
 def test_versions_agree():
@@ -34,7 +34,7 @@ def test_pins_recorded_consistently():
         assert f"git+https://github.com/{ref}" in py, ref
         assert ref in readme, ref
         assert sha in wf, ref
-    assert "azimuth-ink/agent-dec\n#   pin:        05874ca" in (REPO / "examples" / "dec" / "SOURCE").read_text()
+    assert "azimuth-ink/agent-dec\n#   pin:        89fdc36" in (REPO / "examples" / "dec" / "SOURCE").read_text()
     mk = (REPO / "Makefile").read_text()
     cff = (REPO / "CITATION.cff").read_text()
     for repo, sha in PINS.items():

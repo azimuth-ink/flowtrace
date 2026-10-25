@@ -53,8 +53,8 @@ flowtrace = "flowtrace.cli:main"
 # 1c/1d, dec-trust/0.2 classes); see README "Pins" for the local
 # sibling-checkout alternative used until those refs are pushed.
 companions = [
-  "polydiagram @ git+https://github.com/azimuth-ink/polydiagram@ce3598f",
-  "agent-dec @ git+https://github.com/azimuth-ink/agent-dec@05874ca",
+  "polydiagram @ git+https://github.com/azimuth-ink/polydiagram@e768f1c",
+  "agent-dec @ git+https://github.com/azimuth-ink/agent-dec@89fdc36",
 ]
 dev = ["pytest>=8", "hypothesis>=6"]
 

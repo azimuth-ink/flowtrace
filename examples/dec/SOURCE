@@ -2,7 +2,7 @@
 # canon invariant 3). Copied byte-for-byte from the companion repository:
 #
 #   repository: azimuth-ink/agent-dec
-#   pin:        05874ca  (revision 2026-10-11 within v0.2, software 0.2.0; the
+#   pin:        89fdc36  (revision 2026-10-11 within v0.2, software 0.2.0; the
 #               example bytes are those of its "Running example v2.1.0" commit)
 #   files:      examples/trust-bundle.json                       -> trust-bundle.json   (dec-trust/0.2: keys[], policy_authorities[], approvers[])
 #               examples/issuer-pubkey.pem                       -> issuer-pubkey.pem
