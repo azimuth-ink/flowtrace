@@ -11,6 +11,8 @@ that change them — see the README's "Versioning" section.
 
 ## [Unreleased]
 
+- CI: `release.yml` on version tags (gate with pinned companions, source zip, paper PDF via latexmk, GitHub Release) and `RELEASING.md` — the same release path polydiagram and agent-dec have; the software DOI comes from the Zenodo–GitHub integration, the paper's preprint record is deposited by hand.
+
 ## [0.1.0] — 2026-10-10
 
 ### 2026-10-25 — erratum (within 0.1.0)

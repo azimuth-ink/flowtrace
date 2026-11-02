@@ -362,7 +362,8 @@ copied verbatim from agent-dec (Apache-2.0).
 ## Citing
 
 See `CITATION.cff`. Cite the method by its concept DOI
-(10.5281/zenodo.21415947); a software DOI is minted per tagged release.
+(10.5281/zenodo.21415947); a software DOI is minted per tagged release (see
+`RELEASING.md` for the release path and the paper's separate deposit).
 
 *Drafting and specification development were assisted by Claude (Anthropic);
 all design decisions, claims, and errors are the author's.*

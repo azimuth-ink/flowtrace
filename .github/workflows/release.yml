@@ -1,0 +1,42 @@
+name: release
+# On a version tag: re-run the gate with the pinned companions, build the
+# source archive and the paper PDF (from paper/*.tex), and publish a GitHub
+# Release with those assets. If the Zenodo–GitHub integration is enabled for
+# this repository, Zenodo archives the release and mints a software version
+# DOI under the concept record automatically (.zenodo.json supplies the
+# metadata). The paper's own Zenodo record (concept DOI 10.5281/zenodo.21415947)
+# is a separate preprint deposit: upload the PDF built here as a new version
+# of that record by hand — the integration does not do it.
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: { python-version: "3.12" }
+      - name: Gates (pinned companions; the same checks as gate.yml)
+        run: |
+          make dev-pinned
+          python3 -m pytest -q
+          flowtrace validate-report examples/expected/quote-issue.full.json
+      - name: Build source archive
+        run: git archive --format=zip -o "flowtrace-${GITHUB_REF_NAME}.zip" HEAD
+      - name: Build paper PDF (pdflatex)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends texlive-latex-base texlive-latex-extra texlive-fonts-recommended latexmk
+          latexmk -pdf -interaction=nonstopmode -halt-on-error -output-directory=build/paper paper/flow-based-telemetry-coverage.tex
+          cp build/paper/flow-based-telemetry-coverage.pdf "flow-based-telemetry-coverage-${GITHUB_REF_NAME}.pdf"
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes \
+            "flowtrace-${GITHUB_REF_NAME}.zip" \
+            "flow-based-telemetry-coverage-${GITHUB_REF_NAME}.pdf" \
+            paper/flow-based-telemetry-coverage.md
