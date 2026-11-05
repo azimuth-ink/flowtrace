@@ -3,9 +3,9 @@
 # is a green `three-repo` job there.
 #
 # SIBLINGS: where the companion checkouts live (default: beside this repo).
-# Until azimuth-ink/polydiagram@e768f1c and azimuth-ink/agent-dec@89fdc36 are
-# pushed, `make dev` installs both from those local checkouts instead of the
-# pinned git refs in pyproject.toml [companions]. Both are installed as wheels
+# `make dev` installs azimuth-ink/polydiagram@7cd1f3e and
+# azimuth-ink/agent-dec@03a0561 from local checkouts beside this repo instead
+# of the pinned git refs in pyproject.toml [companions] (`make dev-pinned`). Both are installed as wheels
 # (pip builds them from the checkout); never `pip install -e` a companion — an
 # editable install of agent-dec resolves its default methods directory
 # relative to the checkout and masks the installed-package behaviour CI sees.

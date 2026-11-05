@@ -4,17 +4,16 @@ name: gate
 # flow-bound run verifies against flowtrace's flows as the registry, and the
 # gate reproduces the expected reports with execution evidence enabled.
 #
-# PINS. polydiagram is consumed at azimuth-ink/polydiagram@e768f1c (the
-# revision of 2026-10-11 within flow.spec/v0.2 — R12–R15, DG13 — software
-# 0.3.0) and agent-dec at azimuth-ink/agent-dec@89fdc36 (the revision of
-# 2026-10-11 within DEC v0.2 — authorization / completion evidence,
-# human_approval, steps 1c/1d, dec-trust/0.2 classes — software 0.2.0).
-# Those refs exist only on unpushed branches today: until they are pushed,
-# this job cannot check them out or pip-install them from GitHub, and the
-# same steps must be run locally from sibling checkouts —
-# `make dev && make check` (SIBLINGS=.. by default) does exactly that, with
-# the same commands as below. Once pushed, replace nothing: the refs below are
-# the pins.
+# PINS. polydiagram is consumed at azimuth-ink/polydiagram@7cd1f3e (the
+# erratum revision of 2026-11-05 within flow.spec/v0.2 — R12–R15, DG13 —
+# software 0.3.0) and agent-dec at azimuth-ink/agent-dec@03a0561 (the erratum
+# revision of 2026-11-05 within DEC v0.2 — the 0.2.0 content plus the runtime
+# adapter, which this engine does not use — software 0.3.0-dev). Both carry
+# the reading of 2026-11-05 (a bound's exit taken at the cap, spec §7.4/§7.5),
+# which the engine's `plan_reading` delegates to agent-dec's verifier when it
+# is installed; an older agent-dec would read a capped loop as absent.
+# Locally, `make dev && make check` (SIBLINGS=.. by default) runs the same
+# steps from sibling checkouts.
 on:
   push:
   pull_request:
@@ -22,8 +21,8 @@ on:
     - cron: "17 6 * * 1"   # weekly: the same job against the companions' latest main (drift surfaces here)
 
 env:
-  POLYDIAGRAM_REF: e768f1c
-  AGENT_DEC_REF: 89fdc36
+  POLYDIAGRAM_REF: 7cd1f3e
+  AGENT_DEC_REF: 03a0561
 
 jobs:
   three-repo:
