@@ -11,6 +11,7 @@ that change them — see the README's "Versioning" section.
 
 ## [Unreleased]
 
+- **Erratum 2026-11-05 (spec §7.4, §7.5; engine `conformance.py`, with agent-dec's reading of the same date).** The exits a bound provides are taken *in place of* the execution they forbid: a loop step that is the run's last entry with count `bound.max`, the run ending in its `on_exceed` outcome (`fail` ≡ `outcome: error`), has taken the exit (convergent by declaration; previously `absent`); an effect step whose attempts reach `attempts.max` and whose run then ends in its `on_exceed` outcome has taken that exit (the authority refuses attempt `max + 1`). Readings above the bound unchanged; the agreement tests cover the new cases; the seven expected reports are byte-identical.
 - CI: `release.yml` on version tags (gate with pinned companions, source zip, paper PDF via latexmk, GitHub Release) and `RELEASING.md` — the same release path polydiagram and agent-dec have; the software DOI comes from the Zenodo–GitHub integration, the paper's preprint record is deposited by hand.
 
 ## [0.1.0] — 2026-10-10

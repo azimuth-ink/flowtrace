@@ -83,8 +83,22 @@ CASES = [
     dict(realized=attempt_entries(PRIMARY[:5], 2), outcome="allow", termination="completed"),
     dict(realized=attempt_entries(PRIMARY[:5], 4), outcome="error"),
     dict(realized=attempt_entries(PRIMARY[:5], 4), outcome="allow"),
+    dict(realized=attempt_entries(PRIMARY[:5], 3), outcome="error", termination="completed"),   # the exit at the bound (erratum 2026-11-05)
+    dict(realized=attempt_entries(PRIMARY[:5], 3), outcome="allow"),                            # the last attempt completed
     dict(realized=[{"step_id": s, "flow_step": s, "via": "primary"} for s in PRIMARY + ["s6"]], outcome="allow"),
 ]
+
+
+def test_attempts_exit_taken_at_the_bound(degrading_flow):
+    """Spec §7.5 (erratum 2026-11-05): the authority refuses attempt max + 1,
+    so the on_exceed edge is taken when attempt max has failed — the count
+    reaches the bound and the run ends in the declared outcome."""
+    r = plan_reading(degrading_flow.doc, attempt_entries(PRIMARY[:5], 3), outcome="error", termination="completed")
+    assert r["reading"] == "convergent" and r["absent"] == [], r
+    assert r["degraded"] == ["s6 -> outcome error (attempts.on_exceed after 3 attempts)"]
+    r = plan_reading(degrading_flow.doc, attempt_entries(PRIMARY[:5], 3), outcome="allow")
+    assert r["reading"] == "convergent" and r["degraded"] == []
+    assert plan_reading(degrading_flow.doc, attempt_entries(PRIMARY[:5], 2), outcome="error")["degraded"] == []
 
 
 @pytest.mark.parametrize("case", CASES)

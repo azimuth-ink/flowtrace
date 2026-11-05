@@ -108,6 +108,31 @@ def test_local_rules_agree_with_agent_dec(canon_flow, realized):
     assert _reading(canon_flow.doc, realized) == vd.conformance_reading(canon_flow.doc, realized)
     loop_over = [("s1", "s1")] + [("s2", "s2"), ("s3", "s3")] * 3 + [("s4", "s4"), ("s5", "s5")]
     assert _reading(LOOP_FLOW, loop_over) == vd.conformance_reading(LOOP_FLOW, loop_over)
+    # the cap taken in place of iteration max + 1 (spec §7.4, erratum 2026-11-05) reads the same on both sides
+    capped = [("s1", "s1")] + [("s2", "s2"), ("s3", "s3")] * 2                  # s3 ran 2 times = bound.max, last entry
+    for on_exceed in ({"outcome": "error"}, "fail", "flag", {"to": "s4"}):
+        doc = copy.deepcopy(LOOP_FLOW)
+        doc["spec"]["steps"][2]["bound"]["on_exceed"] = on_exceed
+        for kw in (dict(outcome="error", termination="failed"), dict(outcome="allow"), {}):
+            assert _reading(doc, capped, **kw) == vd.conformance_reading(doc, capped, **kw), (on_exceed, kw)
+            assert _reading(doc, loop_over, **kw) == vd.conformance_reading(doc, loop_over, **kw), (on_exceed, kw)
+
+
+def test_loop_cap_taken_in_place_of_iteration_max_plus_one():
+    """Spec §7.4 (erratum 2026-11-05): a {outcome} / fail exit is taken in
+    place of iteration max + 1, so a capped loop's count is max and the loop
+    step is the run's last entry; the reading takes that as the exit."""
+    doc = copy.deepcopy(LOOP_FLOW)
+    doc["spec"]["steps"][2]["bound"]["on_exceed"] = {"outcome": "error"}
+    capped = [("s1", "s1")] + [("s2", "s2"), ("s3", "s3")] * 2
+    r = _reading(doc, capped, outcome="error", termination="failed")
+    assert r["reading"] == "convergent" and r["absent"] == [], r
+    assert r["degraded"] == ["s3 -> outcome error (bound.on_exceed at bound.max 2)"]
+    assert _reading(doc, capped, outcome="allow")["reading"] == "absent"      # within the bound, the run just stopped
+    doc["spec"]["steps"][2]["bound"]["on_exceed"] = "fail"
+    r = _reading(doc, capped, outcome="error", termination="failed")
+    assert r["reading"] == "convergent" and r["degraded"] == ["s3 -> outcome error (bound.on_exceed: fail at bound.max 2)"]
+    assert _reading(doc, capped + [("s2", "s2"), ("s3", "s3")], outcome="error")["reading"] == "failed-run"
 
 
 def test_run_certificate_binding_notes(canon_flow):

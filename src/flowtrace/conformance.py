@@ -178,8 +178,14 @@ def _reading(doc: Mapping[str, Any], realized: Sequence, *, outcome: str | None 
         bound = by_id[L].get("bound") or {}
         mx, on_exceed = bound.get("max"), bound.get("on_exceed", "flag")
         n = count.get(L, 0)
-        if isinstance(mx, int) and n > mx:
-            kind, value = degradation_target(on_exceed)
+        kind, value = degradation_target(on_exceed)
+        if isinstance(mx, int) and n == mx and ran and ran[-1] == L and kind == "outcome" and outcome == value:
+            # the cap taken in place of iteration max + 1 (spec §7.4, erratum 2026-11-05): the loop step is the run's
+            # last entry and the run ended in the declared on_exceed outcome (`fail` reads as {outcome: error})
+            degraded.append(f"{L} -> outcome {value} (bound.on_exceed{': fail' if on_exceed == 'fail' else ''} "
+                            f"at bound.max {mx})")
+            exits.append((L, "bound.on_exceed"))
+        elif isinstance(mx, int) and n > mx:
             if on_exceed == "fail":
                 failed.append(f"loop-exceeded: {L} ran {n} times > bound.max {mx} (on_exceed: fail)")
             elif kind == "outcome":
@@ -295,10 +301,12 @@ def _gate_authority_reason(step: Mapping[str, Any], outcome: str) -> str | None:
 
 
 def _attempt_rules(entries, kinds, by_id, outcome, degraded, divergent, exits) -> None:
-    """Attempts of an effect step against `attempts.max` (spec §7.5): more
-    attempts than the bound is the step's `on_exceed` taken (convergent when
-    the run ended in the declared outcome, or continued at the declared step
-    via on_fail), else divergent (`attempts-exceeded`). Bindings B10/B17 are
+    """Attempts of an effect step against `attempts.max` (spec §7.5): a count
+    reaching the bound whose run then ends in the declared on_exceed outcome
+    (or continues at the declared step via on_fail) is the exit taken in
+    place of attempt max + 1 (erratum 2026-11-05; the authority refuses that
+    attempt); a count above the bound is the exit taken when the run ended
+    the same way, else divergent (`attempts-exceeded`). Bindings B10/B17 are
     the verifier's step 1d; here only the count is read."""
     for i, e in enumerate(entries):
         fs = e["flow_step"]
@@ -306,21 +314,23 @@ def _attempt_rules(entries, kinds, by_id, outcome, degraded, divergent, exits) -
             continue
         attempts = by_id[fs].get("attempts") if isinstance(by_id[fs].get("attempts"), dict) else None
         mx = attempts.get("max") if attempts else None
-        if isinstance(mx, int) and e["attempts"] > mx:
+        if isinstance(mx, int) and e["attempts"] >= mx:
             kind, value = degradation_target(attempts.get("on_exceed"))
+            over = e["attempts"] > mx                       # beyond the bound: only an ungated chain gets here (gate 2i)
+            last_in_flow = i == len(entries) - 1 or all(x["flow_step"] not in kinds for x in entries[i + 1:])
             if kind == "outcome":
-                if outcome == value and (i == len(entries) - 1 or all(x["flow_step"] not in kinds for x in entries[i + 1:])):
+                if outcome == value and last_in_flow:        # the exit taken, at the bound (erratum 2026-11-05) or beyond it
                     degraded.append(f"{fs} -> outcome {value} (attempts.on_exceed after {e['attempts']} attempts)")
                     exits.append((fs, "attempts.on_exceed"))
-                else:
+                elif over:
                     divergent.append(f"attempts-exceeded: {fs} ran {e['attempts']} attempts > attempts.max {mx} and the run "
                                      f"did not end in the declared on_exceed outcome {value} (outcome: {outcome})")
-            elif kind == "to":
+            elif kind == "to":                               # at the bound, a taken {to} edge is the via: on_fail entry read above
                 nxt = entries[i + 1] if i + 1 < len(entries) else None
-                if not (nxt and nxt["flow_step"] == value and nxt["via"] == "on_fail"):
+                if over and not (nxt and nxt["flow_step"] == value and nxt["via"] == "on_fail"):
                     divergent.append(f"attempts-exceeded: {fs} ran {e['attempts']} attempts > attempts.max {mx} and the run "
                                      f"did not continue at the declared on_exceed step {value} via on_fail")
-            else:
+            elif over:
                 divergent.append(f"attempts-exceeded: {fs} ran {e['attempts']} attempts > attempts.max {mx} (no on_exceed declared)")
 
 
