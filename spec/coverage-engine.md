@@ -15,7 +15,9 @@ unit the paragraph belongs to, so that a unit can be removed with its
 paragraphs; untagged text is the 0.1.0 contract, unchanged. Where a tagged
 paragraph names a field, finding or option the 0.1.0 software does not yet
 have, the paragraph is the contract the next release implements. Erratum
-2026-10-25: 14 clarifications; see the changelog.*
+2026-10-25: 14 clarifications; erratum 2026-11-05: 7.4 and 7.5, the exits a
+bound provides are taken in place of the execution they forbid; see the
+changelog.*
 
 This document is normative for the engine: where the paper says *may* and
 *for example*, this document says what the shipped engine does, with the
@@ -551,8 +553,11 @@ parent with children; `failed` reads as 7.2's failed run; a run whose
 manifest has no `termination` is read as before 2026-10-11. A `loop` step's
 `bound.on_exceed` (and, per 7.5, an effect step's `attempts.on_exceed`) in
 the `{to | outcome}` form is a declared degradation edge, read as a
-degradation path taken at iteration `max + 1`, with `fail` ≡ `outcome:
-error` and `flag` ≡ the 0.1.0 divergent reading. From spans alone, an
+degradation path taken *in place of* iteration `max + 1`, with `fail` ≡
+`outcome: error` and `flag` ≡ the 0.1.0 divergent reading; a capped loop's
+count is therefore `max`, and a loop step that is the run's last entry with
+that count, the run ending in its `on_exceed` outcome, has taken the exit
+(erratum 2026-11-05; a count above `max` keeps the earlier readings). From spans alone, an
 `on_fail.outcome` edge is read as the run ending at the source step (its
 declared successors are not absent; a window-truncated run reads the same,
 hence §6.7's `approximate`); the engine cannot see the outcome and
@@ -567,10 +572,14 @@ repeated entries of the step in one run — manifest entries sharing
 spans, repeated boundary spans of the step — are **attempts** and collapse
 into the one declared step for every reading of 7.2 and 7.4: the step is
 present once, its order is that of its first attempt, and the repeat is not
-a divergent repetition. More attempts than `attempts.max` is read as the
-step's `on_exceed` taken (7.4) at attempt `max + 1`, or, when `on_exceed`
-is absent or its outcome or step was not taken, as the divergent finding
-`attempts-over-bound` (`{step, attempts_seen, max}`); a flow that declares
+a divergent repetition. The `on_exceed` edge (7.4) is taken when
+attempt `max` has failed, in place of attempt `max + 1`, which the issuing
+authority refuses: a count reaching `attempts.max` whose run then ends in
+the `on_exceed` outcome (or continues at the `on_exceed` step) has taken
+the exit (erratum 2026-11-05); more attempts than the bound is read the same
+way when the run ended so, or, when `on_exceed` is absent or its outcome or
+step was not taken, as the divergent finding `attempts-over-bound`
+(`{step, attempts_seen, max}`); a flow that declares
 `effect: true` without `attempts` has no bound and the collapse still
 applies. With certificates, the engine reads agent-dec's step-1d result for
 B17: an attempt with `attempt_id > 1` whose previous attempt's completion
