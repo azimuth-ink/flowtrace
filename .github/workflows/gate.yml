@@ -21,8 +21,9 @@ on:
     - cron: "17 6 * * 1"   # weekly: the same job against the companions' latest main (drift surfaces here)
 
 env:
-  POLYDIAGRAM_REF: 7cd1f3e
-  AGENT_DEC_REF: 03a0561
+  # Full SHAs: actions/checkout resolves anything shorter as a branch or tag name and fails.
+  POLYDIAGRAM_REF: 7cd1f3ee6bad7bf8e20e61ef1d938f3395c21819   # 7cd1f3e
+  AGENT_DEC_REF: 03a05618d96be2e962569abd95fb83973698ace3     # 03a0561
 
 jobs:
   three-repo:

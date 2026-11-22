@@ -34,6 +34,8 @@ def test_pins_recorded_consistently():
         assert f"git+https://github.com/{ref}" in py, ref
         assert ref in readme, ref
         assert sha in wf, ref
+        # actions/checkout needs the full SHA (a shorter ref is read as a branch or tag name)
+        assert re.search(rf'_REF: {sha}[0-9a-f]{{33}}\b', wf), f"{ref}: gate.yml must pin the full 40-character SHA"
     assert "azimuth-ink/agent-dec\n#   pin:        03a0561" in (REPO / "examples" / "dec" / "SOURCE").read_text()
     mk = (REPO / "Makefile").read_text()
     cff = (REPO / "CITATION.cff").read_text()
